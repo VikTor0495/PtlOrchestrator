@@ -30,7 +30,7 @@ _ReSharper*/
 *.DotSettings.user
 
 # Build results
-*.dll
+#*.dll
 *.exe
 *.pdb
 

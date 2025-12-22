@@ -1,4 +1,4 @@
-using PtlController;
+﻿using PtlController;
 using PtlController.Service;
 using PtlController.Service.Impl;
 using PtlController.Input;
@@ -22,7 +22,6 @@ builder.Services
     .Validate(o => o.ControllerPort > 0, "ControllerPort non valida")
     .ValidateOnStart();
 
-
 builder.Services.Configure<CartsOptions>(
     builder.Configuration.GetSection("CartsOptions"));
 
@@ -31,9 +30,8 @@ builder.Services.AddSingleton<ICartManager, CartManager>();
 builder.Services.AddSingleton<ITcpLightController, TcpLightController>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
 
+// Libs
 builder.Services.AddSingleton<LightstepConnectionService>();
-
-
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();
