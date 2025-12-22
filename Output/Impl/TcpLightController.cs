@@ -12,11 +12,11 @@ namespace PtlController.Output.Impl;
 public class TcpLightController : ITcpLightController
 {
     private readonly ILogger<TcpLightController> _logger;
-    private readonly CartsConfiguration _config;
+    private readonly CartsOptions _config;
 
     public TcpLightController(
         ILogger<TcpLightController> logger,
-        IOptions<CartsConfiguration> config)
+        IOptions<CartsOptions> config)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         

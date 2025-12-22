@@ -9,11 +9,11 @@ namespace PtlController.Service.Impl;
 public class CartManager : ICartManager
 {
     private readonly ILogger<CartManager> _logger;
-    private readonly CartsConfiguration _config;
+    private readonly CartsOptions _config;
     private readonly ITcpLightController _tcpController;
     
     // Dizionario: barcode -> indice carrello (0-based)
-    private readonly Dictionary<string, int> _barcodeToCart = new();
+    private readonly Dictionary<string, int> _barcodeToCart = [];
     
     // Contatore prodotti per carrello (per bilanciamento)
     private readonly int[] _cartItemCount;
@@ -26,7 +26,7 @@ public class CartManager : ICartManager
 
     public CartManager(
         ILogger<CartManager> logger,
-        IOptions<CartsConfiguration> config,
+        IOptions<CartsOptions> config,
         ITcpLightController tcpController)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -3,7 +3,7 @@ namespace PtlController.Configuration;
 /// <summary>
 /// Configurazione dei carrelli e parametri TCP
 /// </summary>
-public class CartsConfiguration
+public class CartsOptions
 {
     /// <summary>
     /// Numero totale di carrelli gestiti

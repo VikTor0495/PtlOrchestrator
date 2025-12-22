@@ -10,17 +10,30 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-// Configura Host con Dependency Injection
+
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // Registra configurazione tipizzata (Options Pattern)
-builder.Services.Configure<CartsConfiguration>(
-    builder.Configuration.GetSection("CartsConfiguration"));
+builder.Services
+    .AddOptions<LightstepOptions>()
+    .Bind(builder.Configuration.GetSection("Lightstep"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.ControllerIp), "ControllerIp non valida")
+    .Validate(o => o.ControllerPort > 0, "ControllerPort non valida")
+    .ValidateOnStart();
+
+
+builder.Services.Configure<CartsOptions>(
+    builder.Configuration.GetSection("CartsOptions"));
 
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
 builder.Services.AddSingleton<ITcpLightController, TcpLightController>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
+
+builder.Services.AddSingleton<LightstepConnectionService>();
+
+
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

@@ -1,0 +1,949 @@
+<?xml version="1.0" standalone="yes"?>
+<doc>
+  <assembly>
+    <name>AioiSystems.Lightstep</name>
+  </assembly>
+  <members>
+    <member name="T:AioiSystems.Lightstep.PciBusController">
+      <summary>Provides functionality to communicate with the PCI bus type controller.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.ControllerBase">
+      <summary>Represents the abstract base class for the controller communication processing.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.#ctor">
+      <summary>Initializes a new class of ControllerBase class.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Dispose">
+      <summary>Disposes all the resources.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Dispose(System.Boolean)">
+      <summary>Disposes all the resources.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Finalize">
+      <summary>Performs resource release and other clean-up operations.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Connect(System.String)">
+      <summary>Connects the controller with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Connect">
+      <summary>Connects to the controller using the values set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginConnect(System.String)">
+      <summary>Connects the controller asynchronously with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginConnect">
+      <summary>Connects to the controller asynchronously using the value that is set in the property.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.Close">
+      <summary>Closes the connection to the controller.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginClose">
+      <summary>Disconnects the controller connection asynchronously.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.String)">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.String,AioiSystems.Lightstep.CommandInfo@)">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="commandSent">A CommandInfo object that represents the command sent.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.Byte[],System.Int32)">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="sendSize">Byte size of the transmission command.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.Byte[],System.Int32,AioiSystems.Lightstep.CommandInfo@)">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="sendSize">Byte size of the transmission command.</param>
+      <param name="commandSent">A CommandInfo object that represents the command sent.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.Byte[])">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SendCommand(System.Byte[],AioiSystems.Lightstep.CommandInfo@)">
+      <summary>Sends a command by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="commandSent">A CommandInfo object that represents the command sent.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.ResendCommand(AioiSystems.Lightstep.CommandInfo@)">
+      <summary>Resends the very last command being sent.  </summary>
+      <param name="commandSent">A CommandInfo object that represents the command sent.</param>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.ResendCommand">
+      <summary>Resends the very last command being sent.  </summary>
+      <returns>A CommandInfo object that represents the response command from the controller.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.GetCommand">
+      <summary>Gets the command received from the controller from the receiving buffer.</summary>
+      <returns>A CommandInfo object that represents the receiving command. If there is no receiving command "null" will be returned.</returns>
+      <remarks>An exception will not occur if implemented without connecting with the controller.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.String)">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.String,System.Object)">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="tag">User-defined data to associate with the command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.Byte[],System.Object)">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="tag">User-defined data to associate with the command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.Byte[],System.Int32,System.Object)">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="sendSize">Byte size of the transmission command.</param>
+      <param name="tag">User-defined data to associate with the command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.Byte[])">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.BeginSendCommand(System.Byte[],System.Int32)">
+      <summary>Sends a command asynchronously by following the controller communication instruction.</summary>
+      <param name="command">Command.</param>
+      <param name="sendSize">Byte size of the transmission command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.FlushSendBuffer">
+      <summary>Flushes the commands in the transmission buffer.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.ClearSendBuffer">
+      <summary>Clears the transmission buffer.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.WaitSendTask(System.Int32)">
+      <summary>Waits until all the commands in the transmission buffer are sent.</summary>
+      <param name="timeout">Timeout time (in milliseconds).</param>
+      <returns>Returns "false" if the timeout, "true" otherwise.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.SetLicense(System.String)">
+      <summary>Set the license key.</summary>
+      <param name="licenseKey">License key.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ControllerBase.GetLogMessages">
+      <summary>Gets all the acquired log messages from the queue.</summary>
+      <returns>An array of the obtained log data. Returns "null" if no log data is obtained.</returns>
+      <remarks>Can be obtained only if the LogMessageRaised event handler is defined. If the event handler is not defined, log is not stored in the queue.</remarks>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.CommandReceived">
+      <summary>Occurs when a command is received from the controller.</summary>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.LogMessageRaised">
+      <summary>Occurs when log data is added.</summary>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.EndConnect">
+      <summary>Occurs when the asynchronous operation of controller disconnection is complete.</summary>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.EndClose">
+      <summary>Occurs when the asynchronous operation of controller disconnection is complete.</summary>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.ErrorRaised">
+      <summary>Occurs when an error occurs during processing of the internal thread.</summary>
+    </member>
+    <member name="E:AioiSystems.Lightstep.ControllerBase.EndSendCommand">
+      <summary>Occurs when the processing of the asynchronous transmission of a command is complete.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.Logger">
+      <summary>Gets the settings of automatic logging.</summary>
+      <value>An object for automatic logging.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.CommandTextEncoding">
+      <summary>Gets or sets the encoding of the command string.</summary>
+      <value>An Encoding for the command string.  The default value is Shift-JIS.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.SynchronousTimeout">
+      <summary>Gets or sets the waiting time in milliseconds for the asynchronous transmission until completion.</summary>
+      <value>Waiting time (in milliseconds). The default value is 10000 milliseconds.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.SynchronizingObject">
+      <summary>Gets or sets the object of marshaling the calling of various event handlers.  </summary>
+      <value>An object to marshal the calling of various event handlers.  The default value is "null".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.Tag">
+      <summary>Sets or gets the user-defined data associated with the object.</summary>
+      <value>Any object.  The default value is "null".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.IsConnected">
+      <summary>Gets the status of the logical connection.</summary>
+      <value>A boolean value indicates whether it's in the status of being connected.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.CommandTimeout">
+      <summary>Gets or sets the timeout time in milliseconds for sending and receiving a command.</summary>
+      <value>Timeout time (in milliseconds).  The default value is 1000 milliseconds.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ControllerBase.BinaryMode">
+      <summary>Gets or sets a value that represents the binary conversion mode.</summary>
+      <value>"true" when performing binary conversion. Otherwise, "false".  The default value is "true".</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.IPolling">
+      <summary>Defines the functionalities to do the polling of the completed modules.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.IPolling.StartPolling">
+      <summary>Starts automatic polling.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.IPolling.StartPolling(System.Int32)">
+      <summary>Starts automatic polling.</summary>
+      <param name="blockNumber">The block number for polling.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.IPolling.StopPolling">
+      <summary>Stops automatic polling.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.IPolling.PollingInterval">
+      <summary>Gets or sets the polling interval.</summary>
+      <value>Polling interval (in milliseconds).</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.IPolling.PollingLogEnabled">
+      <summary>Gets or sets the value indicating whether to log when polling commands are used.</summary>
+      <value>"true" if all the polling commands are saved to the log. Otherwise, "false".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.IPolling.IsPolling">
+      <summary>Gets the status whether the automatic polling is implementing.</summary>
+      <value>"true" if during automatic polling. Otherwise, "false".</value>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.#ctor">
+      <summary>Initializes a new instance of the PciBusController class.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.Connect(System.String)">
+      <summary>Connects the controller with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.Connect(System.Int32)">
+      <summary>Connects to the controller with the specified board number.</summary>
+      <param name="boardNumber">Board number.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.Connect">
+      <summary>Connects to the controller using the values set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.BeginConnect(System.String)">
+      <summary>Connects the controller asynchronously with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.BeginConnect">
+      <summary>Connects to the controller asynchronously using the valuse set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.BeginConnect(System.Int32)">
+      <summary>Connects to the controller asynchronously with the specified board number.</summary>
+      <param name="boardNumber">Board number.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.Close">
+      <summary>Closes the connection to the controller.</summary>
+      <remarks>The value of the IsConnected property will be false regardless of the presence or absence of an error.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.Dispose(System.Boolean)">
+      <summary>Disposes all the resources.</summary>
+      <remarks>"true" if you want to release both managed and unmanaged resources, and "false" if you want to release only unmanaged resources.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.StartPolling">
+      <summary>Starts automatic polling.</summary>
+      <remarks>Performs polling to block number 00.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.StartPolling(System.Int32)">
+      <summary>Starts automatic polling.</summary>
+      <param name="blockNumber">The block number for polling.</param>
+      <remarks>Implements StartPolling for each block when polling multiple blocks.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.StopPolling">
+      <summary>Stops automatic polling.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.GetBoardCount">
+      <summary>Gets the number of PCI bus controllers that are installed.</summary>
+      <returns>Number of PCI bus controllers.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.GetInformation(System.Int32,System.Int32@)">
+      <summary>Gets the I/O address of the PCI bus controller.</summary>
+      <param name="boardNo">Board number.</param>
+      <param name="ioAddress">I/O address.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.PciBusController.GetInformation(System.Int32,System.Int32@,System.Int32@,System.Int32@)">
+      <summary>Gets the information of the PCI bus controller.</summary>
+      <param name="boardNo">Board number.</param>
+      <param name="ioAddress">I/O address.</param>
+      <param name="busNo">Bus number.</param>
+      <param name="slotNo">Slot number.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.PciBusController.CommandTimeout">
+      <summary>Gets or sets the timeout time in milliseconds for sending and receiving a command.</summary>
+      <value>Timeout time (in milliseconds).  The default value is 3000 milliseconds.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.PciBusController.IsPolling">
+      <summary>Gets the status whether the automatic polling is implementing.</summary>
+      <value>"true" if during automatic polling. Otherwise, "false".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.PciBusController.PollingLogEnabled">
+      <summary>Gets or sets the value indicating whether to log when polling commands are used.</summary>
+      <value>"true" if log is recorded. Otherwise, "false". The default value is "false".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.PciBusController.PollingInterval">
+      <summary>Gets or sets the polling interval.</summary>
+      <value>Polling interval (in milliseconds).  The default value is 100 milliseconds.</value>
+      <remarks>It is not possible to change the value of automatic polling status.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.PciBusController.BoardNumber">
+      <summary>Gets or sets the board number.</summary>
+      <value>Board number. The default value is 1.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.CheckSumErrorException">
+      <summary>The exception that occurs when there is a checksum error.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CheckSumErrorException.#ctor(System.String,AioiSystems.Lightstep.CommandInfo)">
+      <summary>Initializes a new instance.</summary>
+      <param name="message">Error message.</param>
+      <param name="command">Target command.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.CheckSumErrorException.Command">
+      <summary>Gets the target command.</summary>
+      <value>The command that has the checksum error.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.DuplicatedPacketException">
+      <summary>An exception that occurs when the same packet is received.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.DuplicatedPacketException.#ctor(System.String,AioiSystems.Lightstep.CommandInfo)">
+      <summary>Initializes a new instance.</summary>
+      <param name="message">Error message.</param>
+      <param name="command">Target command.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.DuplicatedPacketException.Command">
+      <summary>Gets the information of the target command.</summary>
+      <value>The duplicated command received.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.NakReceivedException">
+      <summary>An exception that occurs when a negative response is received.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.NakReceivedException.#ctor(System.String,AioiSystems.Lightstep.CommandInfo)">
+      <summary>Initializes a new instance.</summary>
+      <param name="message">Error message.</param>
+      <param name="commandResponded">Response command.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.NakReceivedException.CommandResponded">
+      <summary>Gets the response command.</summary>
+      <value>Command.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.LoggingException">
+      <summary>An exception that raised when an error occurs at the time of logging.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.LoggingException.#ctor">
+      <summary>Initializes a new instance.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.LoggingException.#ctor(System.String)">
+      <summary>Initializes a new instance.</summary>
+      <param name="message">Error message.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.LoggingException.#ctor(System.String,System.Exception)">
+      <summary>Initializes a new instance.</summary>
+      <param name="message">Error message.</param>
+      <param name="innerException">An internal exception object.</param>
+    </member>
+    <member name="T:AioiSystems.Lightstep.AddressInfo">
+      <summary>Represents the information about the address.</summary>
+      <remarks>This class is used to store information of each address that is included in the "t" command sent from the controller.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.AddressInfo.#ctor">
+      <summary>Initializes a new instance.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.AddressInfo.GetInputDataBytes">
+      <summary>Gets the input data in byte array.</summary>
+      <returns>The input data.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.AddressInfo.SetInputDataBytes(System.Byte[])">
+      <summary>Sets the input data in byte array.</summary>
+      <param name="inputData">The input data.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.AddressInfo.SplitCommand(System.Byte[])">
+      <summary>Breaks down the information of each address from the response command for each module (h or t).</summary>
+      <param name="command">Command</param>
+      <returns>The broken-down result data.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.AddressInfo.SplitCommand(System.String)">
+      <summary>Breaks down the information of each address from the response command for each module (h or t).</summary>
+      <param name="commandText">Command</param>
+      <returns>The broken-down result data.</returns>
+    </member>
+    <member name="P:AioiSystems.Lightstep.AddressInfo.Pages">
+      <summary>Gets the data of different page.</summary>
+      <value>Dictionary object that contains the data of different page.</value>
+      <remarks>Page-turning controller is used .  The value of key is from 0 to 9.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.AddressInfo.Address">
+      <summary>Gets or sets the address.</summary>
+      <value>Address.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.AddressInfo.Status">
+      <summary>Gets or sets the response status.</summary>
+      <value>Response status.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.AddressInfo.InputData">
+      <summary>Gets or sets the input data of the device.</summary>
+      <value>The input data.</value>
+      <remarks>Light module quantity revision data and BCR i/f input data are stored.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.AddressInfo.InputDataLength">
+      <summary>Gets or sets the data length of the input data of the device.</summary>
+      <value>Data length.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.Rs232cController">
+      <summary>Provides functionality to communicate with the RS-232C controller.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.#ctor">
+      <summary>Initializes a new instance of the Rs232cController class.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Connect(System.String)">
+      <summary>Connects the controller with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Connect(System.Int32)">
+      <summary>Connects with the specified COM port.</summary>
+      <param name="comPort">COM port number.</param>
+      <remarks>Parameters other than the COM port will follow the settings of their individual properties.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Connect(System.Int32,System.Int32,System.Int32,System.IO.Ports.StopBits,System.IO.Ports.Parity)">
+      <summary>To connect by specifying the RS-232C parameters.</summary>
+      <param name="comPort">COM port number.</param>
+      <param name="baudRate">Baud rate.</param>
+      <param name="dataBits">Data length.</param>
+      <param name="stopBits">Stop bit.</param>
+      <param name="parity">Parity.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Connect">
+      <summary>Connects to the controller using the values set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.BeginConnect(System.String)">
+      <summary>Connects the controller asynchronously with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.BeginConnect(System.Int32)">
+      <summary>Connects to the controller asynchronously with the specified COM port.</summary>
+      <param name="comPort">COM port number.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.BeginConnect(System.Int32,System.Int32,System.Int32,System.IO.Ports.StopBits,System.IO.Ports.Parity)">
+      <summary>Connects to the controller asynchronously by specifying the RS-232C parameters.</summary>
+      <param name="comPort">COM port number.</param>
+      <param name="baudRate">Baud rate.</param>
+      <param name="dataBits">Data length.</param>
+      <param name="stopBits">Stop bit.</param>
+      <param name="parity">Parity.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.BeginConnect">
+      <summary>Connects to the controller asynchronously using the valuse set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Close">
+      <summary>Closes the connection to the controller.</summary>
+      <remarks>The value of the IsConnected property will be false regardless of the presence or absence of an error.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.Dispose(System.Boolean)">
+      <summary>Disposes all the resources.</summary>
+      <remarks>"true" if you want to release both managed and unmanaged resources, and "false" if you want to release only unmanaged resources.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.StartPolling">
+      <summary>Starts automatic polling.</summary>
+      <remarks>Performs polling to block number 00.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.StartPolling(System.Int32)">
+      <summary>Starts automatic polling.</summary>
+      <param name="blockNumber">The block number for polling.</param>
+      <remarks>Implements StartPolling for each block when polling multiple blocks.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.StopPolling">
+      <summary>Stops automatic polling.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cController.GetCheckSum(System.Byte[],System.Int32)">
+      <summary>Calculates the checksum.</summary>
+      <param name="command">Command.</param>
+      <param name="size">Command length in byte.</param>
+      <returns>The value of checksum.</returns>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.CommandTimeout">
+      <summary>Gets or sets the timeout time in milliseconds for sending and receiving a command.</summary>
+      <value>Timeout time (in milliseconds).  The default value is 3000 milliseconds.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.IsPolling">
+      <summary>Gets the status whether the automatic polling is implementing.</summary>
+      <value>"true" if during automatic polling. Otherwise, "false".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.Com">
+      <summary>Gets or sets the COM port number of the controller</summary>
+      <value>COM port number.  The default value is 1.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.BaudRate">
+      <summary>Gets or sets the baud rate.</summary>
+      <value>Baud rate. The default value is 9600.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.DataBits">
+      <summary>Gets or sets the number of stop bits per byte.</summary>
+      <value>The length of data bit.  The default value is 8.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.StopBits">
+      <summary>Gets or sets the number of stop bits per byte.</summary>
+      <value>A value representing the number of stop bits. The default value is "One".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.Parity">
+      <summary>Gets or sets the parity-checking protocol.</summary>
+      <value>A value that represents the parity-checking protocol.  The default value is "None".</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.PollingLogEnabled">
+      <summary>Gets or sets the value indicating whether to log when polling commands are used.</summary>
+      <value>Sets to "true" if you want to save all the polling commands to the log. Otherwise, "false".  The default value is "false".</value>
+      <remarks>Polling command is sent and received at the interval set by the PollingInterval property. Logs may become large if set to "true". If set to "false", only the command when there is a response of the light module will be recorded in the log.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cController.PollingInterval">
+      <summary>Gets or sets the polling interval.</summary>
+      <value>Polling interval (in milliseconds).  The default value is 100 milliseconds.</value>
+      <remarks>It is not possible to change the value of automatic polling status.</remarks>
+    </member>
+    <member name="F:AioiSystems.Lightstep.TryoutDlg.components">
+      <summary>Required designer variable.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.TryoutDlg.Dispose(System.Boolean)">
+      <summary>Cleans up any resources being used.</summary>
+      <param name="disposing">"true" if the managed resources are destroyed, and "false" if they are not destroyed.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.TryoutDlg.InitializeComponent">
+      <summary>Required method for Designer support. Please do not change the contents of this method in the code editor.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EthernetController">
+      <summary>Provides functionality to communicate with the Ethernet type controller.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.#ctor">
+      <summary>Initializes a new instance of the EthernetController class.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.Connect(System.String)">
+      <summary>Connects the controller with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.Connect(System.String,System.Int32)">
+      <summary>Connects the controller by specifying the connection parameters.</summary>
+      <param name="ipAddress">IP address.</param>
+      <param name="port">TCP Port Number.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.Connect">
+      <summary>Connects to the controller using the values set in the properties.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.BeginConnect(System.String)">
+      <summary>Connects the controller asynchronously with the specified connection string.</summary>
+      <param name="connectString">Connection string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.BeginConnect">
+      <summary>Connects to the controller asynchronously using the connection parameter value set in the property.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.BeginConnect(System.String,System.Int32)">
+      <summary>Connects the controller asynchronously by specifying the connection parameters.</summary>
+      <param name="ipAddress">IP address.</param>
+      <param name="port">TCP Port Number.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.Close">
+      <summary>Closes the connection to the controller.</summary>
+      <remarks>The value of the IsConnected property will be false regardless of the presence or absence of an error.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetController.Dispose(System.Boolean)">
+      <summary>Disposes all the resources.</summary>
+      <remarks>"true" if you want to release both managed and unmanaged resources, and "false" if you want to release only unmanaged resources.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EthernetController.CommandTimeout">
+      <summary>Gets or sets the timeout time in milliseconds for sending and receiving a command.</summary>
+      <value>Timeout time (in milliseconds).  The default value is 1000 milliseconds.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EthernetController.IPAddress">
+      <summary>Gets or sets the IP address of the controller to be connected.</summary>
+      <value>IP address.  The default value is 192.168.1.254.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EthernetController.Port">
+      <summary>Gets or sets the port number of the controller to be connected.</summary>
+      <value>TCP Port Number.  The default value is 5003.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.ErrorMessages">
+      <summary>To search for localized strings, etc., the resource class must be strongly typed.  </summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.ResourceManager">
+      <summary>Returns the cached ResourceManager instance that is used by this class.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.Culture">
+      <summary>Using this strongly typed resource class,  all of the search for the resource will override the CurrentUICulture property of the current thread.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.AlreadyConnected">
+      <summary>Search for localized string similar to "Controller is already connected.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.BoardNotFound">
+      <summary>Search for localized string similar to "Cannot find the PCI bus controller.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.CardIDError">
+      <summary>Search for localized string similar to "ISA board information was passed on to the PCI function.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.CheckSumError">
+      <summary>Search for localized string similar to "Checksum does not match. Data may be damaged.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.DidNotReset">
+      <summary>Search for localized string similar to "Board has not been reset. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.FailedToClose">
+      <summary>Search for localized string similar to "Failed to close the PCI bus controller.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.FailedToInit">
+      <summary>Search for localized string similar to "Failed to initialize the board.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.FailedToOpen">
+      <summary>Search for localized string similar to "Failed to open the PCI bus controller. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.FifoEmpty">
+      <summary>Search for localized string similar to "Buffer inside the board is empty.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.FifoFull">
+      <summary>Search for localized string similar to "FIFO memory is empty.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.InsufficientMemory">
+      <summary>Search for localized string similar to "Memory for board operation is insufficient.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.InterupptBufferFull">
+      <summary>Search for localized string similar to "Receiving command buffer from the controller is full.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.InvalidCommand">
+      <summary>Search for localized string similar to "Command is invalid.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.InvalidDataLength">
+      <summary>Search for localized string similar to "Data length format of the frame is invalid.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.InvalidSequence">
+      <summary>Search for localized string similar to "Format of the frame's sequence number is invalid. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.JoinTimeout">
+      <summary>Search for localized string similar to "Time out after waiting for the completion of an asynchronous operation.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.LogError">
+      <summary>Search for localized string similar to "Failed to write the log.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.NakReceived">
+      <summary>Search for localized string similar to "Received the "n" command (negative response).".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.NotConnected">
+      <summary>Search for localized string similar to "Operation cannot be executed because the controller is not connected.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.NullHandler">
+      <summary>Search for localized string similar to "Board's handler is "Null".".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.OutOfRangeISA">
+      <summary>Search for localized string similar to "ISA board address is out of the range.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.PacketOverlapped">
+      <summary>Search for localized string similar to "Received the same packet. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.ParameterNotExsist">
+      <summary>Search for localized string similar to "Required parameter is not specified in the connected character string.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.StartLoggingError">
+      <summary>Search for localized string similar to "An error occurred while starting to log.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.STXNotFound">
+      <summary>Search for localized string similar to "Received data without STX. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.TrialMessage1">
+      <summary>Search for localized string similar to "Currently Lightstep is running on a trial license. ".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.TrialMessage2">
+      <summary>Search for localized string similar to "To enable continuous use, please purchase a product version.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.UnknownSender">
+      <summary>Search for localized string similar to "Sender of the sequence has not been set up.".</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorMessages.WrongBoardNumber">
+      <summary>Search for localized string similar to "Board number is incorrect. ".</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.RepeatableCommand">
+      <summary>Provides the functionalities to assist in building a repeatable command.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.RepeatableCommand._repeatData">
+      <summary>Represents the data of the repeat portion that has been added.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.RepeatableCommand.Add(System.String)">
+      <summary>Adds the data of the repeatable portion.</summary>
+      <param name="repeatPart">Data of the repeatable portion</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.RepeatableCommand.Clear">
+      <summary>Deletes all the data of the repetition portion that has been added.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.RepeatableCommand.CreateCommand(System.String,AioiSystems.Lightstep.RepeatableCommand.SplitType,System.Int32)">
+      <summary>Creates commands that are split into the appropriate size.</summary>
+      <param name="basePart">Header portion of the repeatable command.</param>
+      <param name="splitType">Method of split.</param>
+      <param name="splitSize">Split size.</param>
+      <returns>Commands that have been split.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.RepeatableCommand.CreateCommand(System.String,AioiSystems.Lightstep.RepeatableCommand.SplitType)">
+      <summary>Creates commands that are split into the appropriate size.</summary>
+      <param name="basePart">Header portion of the repeatable command.</param>
+      <param name="splitType">Method of split.</param>
+      <returns>Commands that have been split.</returns>
+      <remarks>Split size is set to 128 when split type is RepeatCount, or 1015 when split type is ByteSize.</remarks>
+    </member>
+    <member name="T:AioiSystems.Lightstep.RepeatableCommand.SplitType">
+      <summary>Represents the splitting method.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.RepeatableCommand.SplitType.ByteSize">
+      <summary>Determines the position divided by the number of bytes.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.RepeatableCommand.SplitType.RepeatCount">
+      <summary>Determines the split position by the number of repeatable patterns.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndConnectEventHandler">
+      <summary>Represents the method that will handle the EndConnect event.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndCloseEventHandler">
+      <summary>Represents the method that will handle the EndClose event.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.ErrorRaisedEventHandler">
+      <summary>Represents the method that will handle the ErrorRaised event.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndSendCommandEventHandler">
+      <summary>Represents the method that will handle the EndSendCommand event.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.NextActions">
+      <summary>Represents the next operation.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.NextActions.Ignore">
+      <summary>Ignored.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.NextActions.Stop">
+      <summary>Will stop.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.NextActions.Retry">
+      <summary>Repeats this process again.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.ControllerType">
+      <summary>Represents the type of controller.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.ControllerType.RS232C">
+      <summary>RS-232C type</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.ControllerType.PCIBus">
+      <summary>PCI bus type</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.ControllerType.Ethernet">
+      <summary>Ethernet type</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.SequenceSource">
+      <summary>Represents the sequence source of the command.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.SequenceSource.Unknown">
+      <summary>Unknown</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.SequenceSource.Application">
+      <summary>Application</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.SequenceSource.Controller">
+      <summary>Controller</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.LogDirecion">
+      <summary>Represents the communication direction and type of the command written to the log.</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.LogDirecion.Unknown">
+      <summary>Unknown</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.LogDirecion.Send">
+      <summary>Transmits from the application to the controller</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.LogDirecion.Receive">
+      <summary>Receives from the controller to the application</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.LogDirecion.Caution">
+      <summary>Warning message</summary>
+    </member>
+    <member name="F:AioiSystems.Lightstep.LogDirecion.Inform">
+      <summary>Notification</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.CommandInfo">
+      <summary>Represents the command information.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.#ctor">
+      <summary>Initializes a new instance of the CommandInfo class.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.#ctor(System.String)">
+      <summary>Initializes a new instance of the CommandInfo class.</summary>
+      <param name="commandText">Command string.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.#ctor(System.Byte[])">
+      <summary>Initializes a new instance of the CommandInfo class.</summary>
+      <param name="commandBytes">Command byte array.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.GetCommandBytes">
+      <summary>Gets the command in byte array.</summary>
+      <returns>The command obtained.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.SetCommandBytes(System.Byte[])">
+      <summary>Sets the command with byte array.</summary>
+      <param name="command">Command.</param>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.GetCommandText">
+      <summary>Gets the string type command.</summary>
+      <returns>The command obtained.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.GetCommandText(System.Text.Encoding)">
+      <summary>Gets the string type command.</summary>
+      <param name="encoding">The encoding of converting the byte array to string.</param>
+      <returns>The command obtained.</returns>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.ToString">
+      <summary>Gets the command in string.</summary>
+      <returns>Command string.</returns>
+      <remarks>The same operation as the GetCommandText method.</remarks>
+    </member>
+    <member name="M:AioiSystems.Lightstep.CommandInfo.ToString(System.Text.Encoding)">
+      <summary>Gets the command in string.</summary>
+      <param name="encoding">The encoding of converting the byte array to string.</param>
+      <returns>Command string.</returns>
+      <remarks>The same operation as the GetCommandText method.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.CommandInfo.SequenceSource">
+      <summary>Gets or sets the sequence resource of the command.</summary>
+      <value>A member of SequenceSource enumeration that represents the source of the sequence.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EthernetCommandInfo">
+      <summary>Represents the command information of Ethernet type controller.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EthernetCommandInfo.#ctor">
+      <summary>Initializes a new instance of the EthernetCommandInfo class.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EthernetCommandInfo.Seq">
+      <summary>Gets or sets the sequence number.</summary>
+      <value>Sequence number.  The setting range is from 0 to 999.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EthernetCommandInfo.SenderLength">
+      <summary>Gets or sets the data length of the command.</summary>
+      <value>Data length of the command.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.Rs232cCommandInfo">
+      <summary>Represents the command information of the RS-232C type controller.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.Rs232cCommandInfo.#ctor">
+      <summary>Initializes a new instance of the Rs232cCommandInfo class.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.Rs232cCommandInfo.CheckSum">
+      <summary>Gets or sets the checksum of the command.</summary>
+      <value>The value of checksum. Represents a value from 0x30 to 0x39. If you do not have a checksum, it will be represented by 0xFF.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndConnectEventArgs">
+      <summary>Provides the data of the EndConnect event.</summary>
+    </member>
+    <member name="T:AioiSystems.Lightstep.ErrorRaisedEventArgs">
+      <summary>Provides the data of the ErrorRaised event.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ErrorRaisedEventArgs.#ctor">
+      <summary>Initializes a new instance.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.ErrorRaisedEventArgs.#ctor(System.Exception)">
+      <summary>Initializes a new instance.</summary>
+      <param name="error">An object when an exception occurred.</param>
+    </member>
+    <member name="F:AioiSystems.Lightstep.ErrorRaisedEventArgs._error">
+      <summary>Represents the object of an exception occurred.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.ErrorRaisedEventArgs.Error">
+      <summary>Gets the object of an exception occurred.</summary>
+      <value>An exception object.  "null" if the connection is successful.</value>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EndConnectEventArgs.#ctor">
+      <summary>Initializes a new instance.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EndConnectEventArgs.#ctor(System.Exception)">
+      <summary>Initializes a new instance.</summary>
+      <param name="error">An exception object that occurs during the connection.</param>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndCloseEventArgs">
+      <summary>Provides the data of the EndClose event.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EndCloseEventArgs.#ctor">
+      <summary>Initializes a new instance.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EndCloseEventArgs.#ctor(System.Exception)">
+      <summary>Initializes a new instance.</summary>
+      <param name="error">An exception object that occurs during the disconnection.</param>
+    </member>
+    <member name="T:AioiSystems.Lightstep.LogEventItem">
+      <summary>Represents the log data.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.LogEventItem.#ctor(System.Byte[],AioiSystems.Lightstep.LogDirecion,System.DateTime)">
+      <summary>Initializes a new instance.</summary>
+      <param name="logData">Log data.</param>
+      <param name="dir">Direction of the command or type.</param>
+      <param name="logTime">Logging time.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogEventItem.LogData">
+      <summary>Gets the log data.</summary>
+      <value>Log data.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogEventItem.LogStatus">
+      <summary>Gets the log type.</summary>
+      <value>Direction of the command or the log data type.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogEventItem.TimeStamp">
+      <summary>Gets the time of the log record.</summary>
+      <value>Logging time.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.EndSendCommandEventArgs">
+      <summary>Represents the data of the EndSendCommand event.</summary>
+    </member>
+    <member name="M:AioiSystems.Lightstep.EndSendCommandEventArgs.#ctor(AioiSystems.Lightstep.CommandInfo,AioiSystems.Lightstep.CommandInfo,System.Exception,AioiSystems.Lightstep.NextActions,System.Object)">
+      <summary>Initializes a new instance.</summary>
+      <param name="commandSent">Transmission command.</param>
+      <param name="commandResponded">Command response.</param>
+      <param name="error">An exception object occurs during transmission.</param>
+      <param name="nextAction">The value that represents the next operation.</param>
+      <param name="tag">User-defined data associated with the command.</param>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EndSendCommandEventArgs.ErrorNextAction">
+      <summary>Specifies a value that represents the processing to be performed after the event handler when an error occurs.</summary>
+      <value>A member of NextActions enumeration that represents the next process.</value>
+      <remarks>This value is ignored when normal.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EndSendCommandEventArgs.Tag">
+      <summary>Gets or sets the user-defined data associated with the command.</summary>
+      <value>User-defined data associated with the command.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EndSendCommandEventArgs.Error">
+      <summary>Gets the object of an exception occurred.</summary>
+      <value>An exception object.  "null" if the connection is successful.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EndSendCommandEventArgs.CommandSent">
+      <summary>Gets the transmission command.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.EndSendCommandEventArgs.CommandResponded">
+      <summary>Gets the response command.</summary>
+      <value>A CommandInfo object that represents the response command.</value>
+    </member>
+    <member name="T:AioiSystems.Lightstep.LogFileSettings">
+      <summary>Represents the settings for automatic logging.</summary>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogFileSettings.LogSize">
+      <summary>Gets or sets the maximum size of the log file.</summary>
+      <value>Maximum byte size of the log file. The default value is 1M bytes.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogFileSettings.LogName">
+      <summary>Gets or sets the "any text" embedded in the log file name.</summary>
+      <value>"Any text" that embedded in the file name.</value>
+      <remarks>The file name always starts with "ls_", you can set the "any text" next. The default value is a zero-length string.</remarks>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogFileSettings.LogDirectory">
+      <summary>Gets or sets the base directory to save the log.</summary>
+      <value>The base directory to save the log. The default value is "My Documents" folder.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogFileSettings.Expiration">
+      <summary>Gets or sets the number of days to keep the log files.</summary>
+      <value>Number of retention days. The default value is 14.</value>
+    </member>
+    <member name="P:AioiSystems.Lightstep.LogFileSettings.Enabled">
+      <summary>Gets or sets the value that represents the valid/invalid state of the log.</summary>
+      <value>"true" if you want to enable logging. Otherwise "false". The default value is "true".</value>
+    </member>
+  </members>
+</doc>

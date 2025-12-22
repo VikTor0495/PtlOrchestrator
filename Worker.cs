@@ -13,17 +13,19 @@ public class Worker(
     ILogger<Worker> logger,
     ICartManager cartManager,
     IBarcodeInputService barcodeInput,
-    IHostApplicationLifetime appLifetime) : BackgroundService
+    IHostApplicationLifetime appLifetime,
+    LightstepConnectionService lightstepConnectionService) : BackgroundService
 {
     private readonly ILogger<Worker> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ICartManager _cartManager = cartManager ?? throw new ArgumentNullException(nameof(cartManager));
     private readonly IBarcodeInputService _barcodeInput = barcodeInput ?? throw new ArgumentNullException(nameof(barcodeInput));
     private readonly IHostApplicationLifetime _appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
+    private readonly LightstepConnectionService _connectionService = lightstepConnectionService ?? throw new ArgumentNullException(nameof(lightstepConnectionService));
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("╔═══════════════════════════════════════════════╗");
-        _logger.LogInformation("║   BARCODE CART MANAGER - WORKER SERVICE      ║");
+        _logger.LogInformation("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
         _logger.LogInformation("╚═══════════════════════════════════════════════╝");
         _logger.LogInformation("");
 
@@ -36,41 +38,36 @@ public class Worker(
         }
 
         _logger.LogInformation("Sistema inizializzato correttamente");
-        _logger.LogInformation("");
-        _logger.LogInformation("Comandi disponibili:");
-        _logger.LogInformation("  - Scansiona un barcode per assegnare al carrello");
-        _logger.LogInformation("  - 'status' - Mostra stato carrelli");
-        _logger.LogInformation("  - 'reset' - Reset di tutti i carrelli");
-        _logger.LogInformation("  - 'exit' o 'quit' - Esci dal programma");
-        _logger.LogInformation("");
+        LogsAvailableCommands();
         _logger.LogInformation("Pronto per ricevere barcode...");
         _logger.LogInformation(new string('─', 50));
         _logger.LogInformation("");
 
         try
         {
-            // Loop principale di lettura input
+            _logger.LogInformation("PTL Worker starting");
+
+            _connectionService.Connect();
+            _connectionService.SendTestCommand();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    // Leggi input (barcode o comando)
+                 
                     var input = await _barcodeInput.ReadInputAsync(stoppingToken);
 
                     if (string.IsNullOrWhiteSpace(input))
                         continue;
 
-                    // Gestione comandi speciali
                     if (await HandleSpecialCommandAsync(input, stoppingToken))
                         continue;
 
-                    // Processa il barcode
                     await _cartManager.ProcessBarcodeAsync(input, stoppingToken);
                     _logger.LogInformation(""); // Riga vuota per separare
                 }
                 catch (OperationCanceledException)
                 {
-                    // Shutdown richiesto
                     break;
                 }
                 catch (Exception ex)
@@ -87,6 +84,7 @@ public class Worker(
         finally
         {
             _logger.LogInformation("Worker terminato");
+            _connectionService.Disconnect();
         }
     }
 
@@ -126,13 +124,7 @@ public class Worker(
 
             case "help":
             case "?":
-                _logger.LogInformation("");
-                _logger.LogInformation("Comandi disponibili:");
-                _logger.LogInformation("  - Scansiona un barcode per assegnare al carrello");
-                _logger.LogInformation("  - 'status' - Mostra stato carrelli");
-                _logger.LogInformation("  - 'reset' - Reset di tutti i carrelli");
-                _logger.LogInformation("  - 'exit' - Esci dal programma");
-                _logger.LogInformation("");
+                LogsAvailableCommands();
                 return true;
 
             default:
@@ -144,5 +136,10 @@ public class Worker(
     {
         _logger.LogInformation("Shutdown in corso...");
         return base.StopAsync(cancellationToken);
+    }
+
+    private void LogsAvailableCommands() 
+    {
+        _logger.LogInformation("\nComandi disponibili:\n- Scansiona un barcode per assegnare al carrello\n- 'status' - Mostra stato carrelli\n- 'reset' - Reset di tutti i carrelli\n- 'exit' - Esci dal programma\n");
     }
 }
