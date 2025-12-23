@@ -1,14 +1,12 @@
 using PtlController.Service;
 using PtlController.Input;
+using PtlController.Domain;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace PtlController;
 
-/// <summary>
-/// Worker principale che gestisce il loop di lettura barcode
-/// </summary>
 public class Worker(
     ILogger<Worker> logger,
     ICartManager cartManager,
@@ -22,48 +20,45 @@ public class Worker(
     private readonly IHostApplicationLifetime _appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
     private readonly LightstepConnectionService _connectionService = lightstepConnectionService ?? throw new ArgumentNullException(nameof(lightstepConnectionService));
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("╔═══════════════════════════════════════════════╗");
-        _logger.LogInformation("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
-        _logger.LogInformation("╚═══════════════════════════════════════════════╝");
-        _logger.LogInformation("");
-
-        // Verifica configurazione
-        if (!_cartManager.IsConfigurationValid())
-        {
-            _logger.LogCritical("Configurazione carrelli non valida! Arresto...");
-            _appLifetime.StopApplication();
-            return;
-        }
-
-        _logger.LogInformation("Sistema inizializzato correttamente");
-        LogsAvailableCommands();
-        _logger.LogInformation("Pronto per ricevere barcode...");
-        _logger.LogInformation(new string('─', 50));
-        _logger.LogInformation("");
+        ShowStartupLogs();
 
         try
         {
             _logger.LogInformation("PTL Worker starting");
 
-            _connectionService.Connect();
-            _connectionService.SendTestCommand();
+            await ConnectToControllerAsync(cancellationToken);
 
-            while (!stoppingToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
                  
-                    var input = await _barcodeInput.ReadInputAsync(stoppingToken);
+                    var input = await _barcodeInput.ReadInputAsync(cancellationToken);
 
                     if (string.IsNullOrWhiteSpace(input))
                         continue;
 
-                    if (await HandleSpecialCommandAsync(input, stoppingToken))
+                    if (await HandleSpecialCommandAsync(input, cancellationToken))
                         continue;
 
-                    await _cartManager.ProcessBarcodeAsync(input, stoppingToken);
+                    var result = _cartManager.ProcessBarcodeAsync(input, cancellationToken);
+
+                    if (!result.Success)
+                    {
+                        // TODO: segnale errore operatore
+                        continue;
+                    }
+                    var cartId = result.Cart!.CartId;
+                  
+
+                    // QUI: futuro PP5(module)
+                    _logger.LogInformation(
+                        "Accendere modulo PTL {Module} per carrello {CartId}",
+                        module,
+                        cartId);
+                    
                     _logger.LogInformation(""); // Riga vuota per separare
                 }
                 catch (OperationCanceledException)
@@ -72,7 +67,7 @@ public class Worker(
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Errore durante elaborazione input");
+                    _logger.LogError("Errore durante elaborazione input barcode: {Message}", ex.Message);
                 }
             }
         }
@@ -88,9 +83,7 @@ public class Worker(
         }
     }
 
-    /// <summary>
-    /// Gestisce i comandi speciali (status, reset, exit, ecc.)
-    /// </summary>
+
     private async Task<bool> HandleSpecialCommandAsync(string input, CancellationToken cancellationToken)
     {
         switch (input.ToLower().Trim())
@@ -124,22 +117,33 @@ public class Worker(
 
             case "help":
             case "?":
-                LogsAvailableCommands();
+                ShowStartupLogs();
                 return true;
 
             default:
-                return false; // Non è un comando speciale
+                return false; 
         }
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    private void ShowStartupLogs() 
     {
-        _logger.LogInformation("Shutdown in corso...");
-        return base.StopAsync(cancellationToken);
+        _logger.LogInformation("╔═══════════════════════════════════════════════╗");
+        _logger.LogInformation("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
+        _logger.LogInformation("╚═══════════════════════════════════════════════╝");
+        _logger.LogInformation("");
+        _logger.LogInformation("Sistema inizializzato correttamente");
+        _logger.LogInformation("\nComandi disponibili:\n- Scansiona un barcode per assegnare al carrello\n- 'status' - Mostra stato carrelli\n- 'reset' - Reset di tutti i carrelli\n- 'exit' - Esci dal programma\n");
+        _logger.LogInformation("Pronto per ricevere barcode...");
+        _logger.LogInformation(new string('─', 50));
+        _logger.LogInformation("");
+        
     }
 
-    private void LogsAvailableCommands() 
+    private async Task ConnectToControllerAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("\nComandi disponibili:\n- Scansiona un barcode per assegnare al carrello\n- 'status' - Mostra stato carrelli\n- 'reset' - Reset di tutti i carrelli\n- 'exit' - Esci dal programma\n");
+        await _connectionService.EnsureConnectedAsync(
+            TimeSpan.FromSeconds(10),
+            cancellationToken);
     }
+
 }
