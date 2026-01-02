@@ -8,27 +8,28 @@ using Microsoft.Extensions.Logging;
 namespace PtlController;
 
 public class Worker(
-    ILogger<Worker> logger,
     ICartManager cartManager,
     IBarcodeInputService barcodeInput,
     IHostApplicationLifetime appLifetime,
-    LightstepConnectionService lightstepConnectionService) : BackgroundService
+    LightstepConnectionService lightstepConnectionService,
+    ILogger<Worker> logger) : BackgroundService
 {
-    private readonly ILogger<Worker> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
     private readonly ICartManager _cartManager = cartManager ?? throw new ArgumentNullException(nameof(cartManager));
     private readonly IBarcodeInputService _barcodeInput = barcodeInput ?? throw new ArgumentNullException(nameof(barcodeInput));
     private readonly IHostApplicationLifetime _appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
     private readonly LightstepConnectionService _connectionService = lightstepConnectionService ?? throw new ArgumentNullException(nameof(lightstepConnectionService));
+    private readonly ILogger<Worker> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        ShowStartupLogs();
-
         try
         {
             _logger.LogInformation("PTL Worker starting");
 
             await ConnectToControllerAsync(cancellationToken);
+            
+            ShowStartupLogs();
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -43,23 +44,14 @@ public class Worker(
                     if (await HandleSpecialCommandAsync(input, cancellationToken))
                         continue;
 
-                    var result = _cartManager.ProcessBarcodeAsync(input, cancellationToken);
+                    var result = _cartManager.ProcessBarcode(input);
 
                     if (!result.Success)
-                    {
-                        // TODO: segnale errore operatore
                         continue;
-                    }
-                    var cartId = result.Cart!.CartId;
-                  
 
-                    // QUI: futuro PP5(module)
-                    _logger.LogInformation(
-                        "Accendere modulo PTL {Module} per carrello {CartId}",
-                        module,
-                        cartId);
-                    
-                    _logger.LogInformation(""); // Riga vuota per separare
+                    _logger.LogInformation("Posizionare su basket {BasketId} carrello {CartId}", result.Basket!.BasketId, result.Cart!.CartId);
+
+                    _logger.LogInformation(""); 
                 }
                 catch (OperationCanceledException)
                 {
@@ -67,7 +59,7 @@ public class Worker(
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Errore durante elaborazione input barcode: {Message}", ex.Message);
+                    _logger.LogError(ex, "Errore durante elaborazione input barcode: {Message}", ex.Message);
                 }
             }
         }
@@ -91,16 +83,16 @@ public class Worker(
             case "exit":
             case "quit":
             case "q":
-                _logger.LogWarning("Richiesta terminazione applicazione...");
+                _logger.LogInformation("Richiesta terminazione applicazione...");
                 _appLifetime.StopApplication();
                 return true;
 
-            case "status":
+            case "status":  
+                _logger.LogInformation("Richiesta stato carrelli...");
                 _cartManager.ShowStatus();
                 return true;
-
             case "reset":
-                _logger.LogWarning("Richiesta reset carrelli...");
+                _logger.LogInformation("Richiesta reset carrelli...");
                 _logger.LogInformation("Confermi reset? (s/n):");
                 
                 var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
@@ -127,15 +119,18 @@ public class Worker(
 
     private void ShowStartupLogs() 
     {
-        _logger.LogInformation("╔═══════════════════════════════════════════════╗");
-        _logger.LogInformation("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
-        _logger.LogInformation("╚═══════════════════════════════════════════════╝");
-        _logger.LogInformation("");
-        _logger.LogInformation("Sistema inizializzato correttamente");
-        _logger.LogInformation("\nComandi disponibili:\n- Scansiona un barcode per assegnare al carrello\n- 'status' - Mostra stato carrelli\n- 'reset' - Reset di tutti i carrelli\n- 'exit' - Esci dal programma\n");
-        _logger.LogInformation("Pronto per ricevere barcode...");
-        _logger.LogInformation(new string('─', 50));
-        _logger.LogInformation("");
+        Console.WriteLine("╔═══════════════════════════════════════════════╗");
+        Console.WriteLine("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
+        Console.WriteLine("╚═══════════════════════════════════════════════╝");
+        Console.WriteLine("");
+        Console.WriteLine("Sistema inizializzato correttamente\n");
+        Console.WriteLine("Comandi disponibili:\n");
+        Console.WriteLine("- 'status' - Mostra stato carrelli\n");
+        Console.WriteLine("- 'reset' - Reset di tutti i carrelli\n");
+        Console.WriteLine("- 'exit' - Esci dal programma\n");
+        Console.WriteLine("Pronto per ricevere input!\n");
+        Console.WriteLine(new string('─', 50));
+        Console.WriteLine("");
         
     }
 

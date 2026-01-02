@@ -5,27 +5,30 @@ public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
     public int CartId { get; } = cartId;
     private readonly List<Basket> _baskets = [.. baskets];
 
+    public IReadOnlyCollection<Basket> Baskets => _baskets;
+
     public CartAssignmentResult TryAddItem(string barcode)
-{
-    var existing = _baskets
-        .FirstOrDefault(b => b.Barcode == barcode && !b.IsFull);
-
-    if (existing is not null)
     {
-        existing.AddItem(barcode);
-        return CartAssignmentResult.ExistingItem(this, existing);
+        var existing = _baskets
+            .FirstOrDefault(b => b.Barcode == barcode && !b.IsFull);
+
+        if (existing is not null)
+        {
+            existing.AddItem(barcode);
+            return CartAssignmentResult.ExistingItem(this, existing);
+        }
+
+        var empty = _baskets.FirstOrDefault(b => b.IsEmpty);
+        if (empty is not null)
+        {
+            empty.AddItem(barcode);
+            return CartAssignmentResult.NewItem(this, empty);
+        }
+
+        return CartAssignmentResult.Full(
+            $"Carrello {CartId} saturo per prodotto {barcode}");
     }
 
-    var empty = _baskets.FirstOrDefault(b => b.IsEmpty);
-    if (empty is not null)
-    {
-        empty.AddItem(barcode);
-        return CartAssignmentResult.NewItem(this, empty);
-    }
-
-    return CartAssignmentResult.Full(
-        $"Carrello {CartId} saturo per prodotto {barcode}");
-}
 
     public void Reset()
         => _baskets.ForEach(b => b.Reset());

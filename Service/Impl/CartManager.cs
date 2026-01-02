@@ -1,5 +1,4 @@
 using PtlController.Configuration;
-using PtlController.Output;
 using PtlController.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,45 +6,54 @@ using Microsoft.Extensions.Options;
 namespace PtlController.Service.Impl;
 
 public sealed class CartManager(
-    ILogger<CartManager> logger,
     CartContainer cartContainer,
-    ITcpLightController ptl) : ICartManager
+    ILogger<CartManager> logger) : ICartManager
 {
-    private readonly ILogger<CartManager> _logger = logger;
+
     private readonly CartContainer _cartContainer = cartContainer;
-    private readonly ITcpLightController _ptl = ptl;
+    private readonly ILogger<CartManager> _logger = logger;
 
-    public async Task ProcessBarcodeAsync(string barcode, CancellationToken ct)
+    private readonly object _lock = new();
+
+
+    public CartAssignmentResult ProcessBarcode(string barcode)
     {
-        var result = _cartContainer.AssignItem(barcode);
+        CartAssignmentResult result;
 
-        if (!result.Success)
+        lock (_lock)
         {
-            _logger.LogWarning(
-                "RIFIUTATO barcode {Barcode}: {Reason}",
-                barcode,
-                result.Reason);
+            result = _cartContainer.AssignItem(barcode);
 
-            // futuro: buzzer / luce errore
-            return;
+            if (!result.Success)
+            {
+                _logger.LogWarning(
+                    "RIFIUTATO barcode {Barcode}: {Reason}",
+                    barcode,
+                    result.Reason);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "ACCETTATO barcode {Barcode} → Cart {CartId} Basket {BasketId} ({Type})",
+                    barcode,
+                    result.Cart!.CartId,
+                    result.Basket!.BasketId,
+                    result.Type);
+            }
         }
 
-        _logger.LogInformation(
-            "ACCETTATO barcode {Barcode} → Cart {CartId}, Basket {BasketId} ({Type})",
-            barcode,
-            result.Cart!.CartId,
-            result.Basket!.BasketId,
-            result.Type);
-
-        //await _ptl.SwitchOnAsync( da rivedere 
-        //    result.Basket.ModuleAddress,
-        //    ct);
+        return result;
     }
-    
+
+
     public void ResetAll()
     {
         _cartContainer.ResetAll();
-        _logger.LogWarning("Reset completo di tutti i carrelli");
+        _logger.LogInformation("Reset completo di tutti i carrelli");
     }
 
+    public void ShowStatus()
+    {
+        _cartContainer.ShowStatus();
+    }
 }

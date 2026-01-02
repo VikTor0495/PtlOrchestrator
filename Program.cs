@@ -3,13 +3,14 @@ using PtlController.Service;
 using PtlController.Service.Impl;
 using PtlController.Input;
 using PtlController.Input.Impl;
-using PtlController.Output;
-using PtlController.Output.Impl;
 using PtlController.Configuration;
+using PtlController.Configuration.Formatter;
+using PtlController.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Options;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -22,12 +23,30 @@ builder.Services
     .Validate(o => o.ControllerPort > 0, "ControllerPort non valida")
     .ValidateOnStart();
 
-builder.Services.Configure<CartsOptions>(
-    builder.Configuration.GetSection("CartsOptions"));
+builder.Services.Configure<List<CartOptions>>(
+    builder.Configuration.GetSection("Carts"));
+
+builder.Services.AddSingleton<CartContainer>(sp =>
+{
+    var cartConfigs = sp
+        .GetRequiredService<IOptions<List<CartOptions>>>()
+        .Value;
+
+    var carts = cartConfigs.Select(cartCfg =>
+        new Cart(
+            cartCfg.CartId,
+            cartCfg.Baskets.Select(b =>
+                new Basket(
+                    basketId: b.BasketId,
+                    maxQuantity: b.MaxQuantity))
+        )
+    ).ToList();
+
+    return new CartContainer(carts);
+});
 
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
-builder.Services.AddSingleton<ITcpLightController, TcpLightController>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
 
 // Libs
@@ -36,11 +55,19 @@ builder.Services.AddSingleton<LightstepConnectionService>();
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();
 
-// Configura logging
+// Configura logging 
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+builder.Logging.AddConsoleFormatter<CustomLogFormatter, ConsoleFormatterOptions>();
+builder.Logging.AddConsole(options =>
+{
+    options.FormatterName = "custom";
+});
 builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
 
 // Build e run
 var host = builder.Build();
 await host.RunAsync();
+

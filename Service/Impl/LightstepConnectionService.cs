@@ -6,11 +6,12 @@ using PtlController.Configuration;
 namespace PtlController.Service;
 
 public sealed class LightstepConnectionService(
-    ILogger<LightstepConnectionService> logger,
-    IOptions<LightstepOptions> options)
+    IOptions<LightstepOptions> options,
+    ILogger<LightstepConnectionService> logger)
 {
-    private readonly ILogger<LightstepConnectionService> _logger = logger;
+ 
     private readonly LightstepOptions _options = options.Value;
+    private readonly ILogger<LightstepConnectionService> _logger = logger;
 
     private EthernetController? _controller;
     private TaskCompletionSource<bool>? _connectedTcs;
@@ -21,16 +22,13 @@ public sealed class LightstepConnectionService(
     {
         if (_controller != null)
         {
-            _logger.LogDebug("Lightstep già connesso");
+            _logger.LogInformation("Lightstep già connesso");
             return;
         }
 
         _connectedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        _logger.LogInformation(
-            "Connessione Lightstep a {Ip}:{Port}",
-            _options.ControllerIp,
-            _options.ControllerPort);
+        _logger.LogInformation("Connessione Lightstep a {ControllerIp}:{ControllerPort}", _options.ControllerIp, _options.ControllerPort);
 
         try
         {

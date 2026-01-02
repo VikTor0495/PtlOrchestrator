@@ -1,9 +1,8 @@
 namespace PtlController.Domain;
 
-public sealed class Basket(int basketId, int moduleAddress, int maxQuantity)
+public sealed class Basket(int basketId, int maxQuantity)
 {
     public int BasketId { get; } = basketId;
-    public int ModuleAddress { get; } = moduleAddress;
     public int MaxQuantity { get; } = maxQuantity;
 
     private string? _barcode;

@@ -1,9 +1,14 @@
 namespace PtlController.Service;
 
+using PtlController.Domain;
+
 
 public interface ICartManager
 {
-    Task ProcessBarcodeAsync(string barcode, CancellationToken ct);
+    CartAssignmentResult ProcessBarcode(string barcode);
+
     void ResetAll();
+
+    void ShowStatus();
 
 }
