@@ -4,9 +4,9 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>dotnet-PtlController-8f3e2d1b-9c5a-4b7f-8e6d-1a2b3c4d5e6f</UserSecretsId>
-    <AssemblyName>PtlController</AssemblyName>
-    <RootNamespace>PtlController</RootNamespace>
+    <UserSecretsId>dotnet-PtlOrchestrator-8f3e2d1b-9c5a-4b7f-8e6d-1a2b3c4d5e6f</UserSecretsId>
+    <AssemblyName>PtlOrchestrator</AssemblyName>
+    <RootNamespace>PtlOrchestrator</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 

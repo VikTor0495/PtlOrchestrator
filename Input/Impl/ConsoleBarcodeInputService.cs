@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace PtlController.Input.Impl;
+namespace PtlOrchestrator.Input.Impl;
 
 /// <summary>
 /// Servizio di input da Console per lettura barcode

@@ -1,4 +1,4 @@
-namespace PtlController.Configuration;
+namespace PtlOrchestrator.Configuration;
 
 public sealed class CartOptions
 {

@@ -1,6 +1,6 @@
-namespace PtlController.Service;
+namespace PtlOrchestrator.Service;
 
-using PtlController.Domain;
+using PtlOrchestrator.Domain;
 
 
 public interface ICartManager

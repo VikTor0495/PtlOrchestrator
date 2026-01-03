@@ -1,4 +1,4 @@
-namespace PtlController.Input;
+namespace PtlOrchestrator.Input;
 
 
 public interface IBarcodeInputService

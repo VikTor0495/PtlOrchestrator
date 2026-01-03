@@ -1,4 +1,4 @@
-namespace PtlController.Domain;
+namespace PtlOrchestrator.Domain;
 
 public enum CartAssignmentType
 {

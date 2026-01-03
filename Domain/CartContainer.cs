@@ -1,5 +1,5 @@
 
-namespace PtlController.Domain;
+namespace PtlOrchestrator.Domain;
 
 public sealed class CartContainer(IEnumerable<Cart> carts)
 {
@@ -52,4 +52,19 @@ public sealed class CartContainer(IEnumerable<Cart> carts)
         Console.WriteLine("══════════════════════════════════════════════");
         Console.WriteLine("");
     }
+
+    public void Rollback(CartAssignmentResult assignment)
+    {
+        if (!assignment.Success || assignment.Cart == null || assignment.Basket == null || string.IsNullOrEmpty(assignment.Basket.Barcode))
+            return;
+
+        var cart = _carts.FirstOrDefault(c => c.CartId == assignment.Cart.CartId);
+        if (cart == null)
+            return;
+
+        cart.RemoveItem(
+            assignment.Basket.BasketId,
+            assignment.Basket.Barcode);
+    }
+
 }

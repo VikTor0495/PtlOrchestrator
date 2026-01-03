@@ -3,7 +3,7 @@ using System;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace PtlController.Configuration.Formatter;
+namespace PtlOrchestrator.Configuration.Formatter;
 
 public sealed class CustomLogFormatter : ConsoleFormatter
 {

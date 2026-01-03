@@ -1,4 +1,4 @@
-namespace PtlController.Domain;
+namespace PtlOrchestrator.Domain;
 
 public sealed class Basket(int basketId, int maxQuantity)
 {
@@ -27,6 +27,17 @@ public sealed class Basket(int basketId, int maxQuantity)
     {
         _barcode = null;
         _currentQuantity = 0;
+    }
+
+      public void RemoveItem(string barcode)
+    {
+        if (Barcode != barcode || _currentQuantity == 0)
+            return;
+
+        _currentQuantity--;
+
+        if (_currentQuantity == 0)
+            _barcode = null;
     }
 
     public string? Barcode => _barcode;

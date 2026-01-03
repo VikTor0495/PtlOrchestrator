@@ -1,9 +1,9 @@
-using PtlController.Configuration;
-using PtlController.Domain;
+using PtlOrchestrator.Configuration;
+using PtlOrchestrator.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace PtlController.Service.Impl;
+namespace PtlOrchestrator.Service.Impl;
 
 public sealed class CartManager(
     CartContainer cartContainer,
@@ -55,5 +55,11 @@ public sealed class CartManager(
     public void ShowStatus()
     {
         _cartContainer.ShowStatus();
+    }
+
+    private void Rollback(CartAssignmentResult assignment)
+    {
+        _cartContainer.Rollback(assignment);
+
     }
 }

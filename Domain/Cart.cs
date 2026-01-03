@@ -1,4 +1,4 @@
-namespace PtlController.Domain;
+namespace PtlOrchestrator.Domain;
 
 public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
 {
@@ -29,8 +29,14 @@ public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
             $"Carrello {CartId} saturo per prodotto {barcode}");
     }
 
-
     public void Reset()
         => _baskets.ForEach(b => b.Reset());
+
+    public void RemoveItem(int basketId, string barcode)
+    {
+        var basket = _baskets.FirstOrDefault(b => b.BasketId == basketId);
+        basket?.RemoveItem(barcode);
+    }
+
 }
 

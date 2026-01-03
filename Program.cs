@@ -1,14 +1,11 @@
-﻿using PtlController;
-using PtlController.Service;
-using PtlController.Service.Impl;
-using PtlController.Input;
-using PtlController.Input.Impl;
-using PtlController.Configuration;
-using PtlController.Configuration.Formatter;
-using PtlController.Domain;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+﻿using PtlOrchestrator;
+using PtlOrchestrator.Service;
+using PtlOrchestrator.Service.Impl;
+using PtlOrchestrator.Input;
+using PtlOrchestrator.Input.Impl;
+using PtlOrchestrator.Configuration;
+using PtlOrchestrator.Configuration.Formatter;
+using PtlOrchestrator.Domain;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
@@ -48,9 +45,7 @@ builder.Services.AddSingleton<CartContainer>(sp =>
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
-
-// Libs
-builder.Services.AddSingleton<LightstepConnectionService>();
+builder.Services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

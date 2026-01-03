@@ -1,24 +1,24 @@
-using PtlController.Service;
-using PtlController.Input;
-using PtlController.Domain;
+using PtlOrchestrator.Service;
+using PtlOrchestrator.Input;
+using PtlOrchestrator.Domain;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace PtlController;
+namespace PtlOrchestrator;
 
 public class Worker(
     ICartManager cartManager,
     IBarcodeInputService barcodeInput,
     IHostApplicationLifetime appLifetime,
-    LightstepConnectionService lightstepConnectionService,
+    ILightstepConnectionService lightstepConnectionService,
     ILogger<Worker> logger) : BackgroundService
 {
 
     private readonly ICartManager _cartManager = cartManager ?? throw new ArgumentNullException(nameof(cartManager));
     private readonly IBarcodeInputService _barcodeInput = barcodeInput ?? throw new ArgumentNullException(nameof(barcodeInput));
     private readonly IHostApplicationLifetime _appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
-    private readonly LightstepConnectionService _connectionService = lightstepConnectionService ?? throw new ArgumentNullException(nameof(lightstepConnectionService));
+    private readonly ILightstepConnectionService _connectionService = lightstepConnectionService ?? throw new ArgumentNullException(nameof(lightstepConnectionService));
     private readonly ILogger<Worker> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -27,7 +27,7 @@ public class Worker(
         {
             _logger.LogInformation("PTL Worker starting");
 
-            await ConnectToControllerAsync(cancellationToken);
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
             
             ShowStartupLogs();
 
@@ -132,13 +132,6 @@ public class Worker(
         Console.WriteLine(new string('─', 50));
         Console.WriteLine("");
         
-    }
-
-    private async Task ConnectToControllerAsync(CancellationToken cancellationToken)
-    {
-        await _connectionService.EnsureConnectedAsync(
-            TimeSpan.FromSeconds(10),
-            cancellationToken);
     }
 
 }

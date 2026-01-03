@@ -1,4 +1,4 @@
-namespace PtlController.Configuration;
+namespace PtlOrchestrator.Configuration;
 
 public sealed class LightstepOptions
 {
@@ -6,5 +6,5 @@ public sealed class LightstepOptions
     public string ControllerIp { get; init; } = string.Empty;
     public int ControllerPort { get; init; }
     public bool AutoReconnect { get; init; }
-    public int ReconnectDelayMs { get; init; }
+    public int ConnectionTimeout { get; init; }
 }
