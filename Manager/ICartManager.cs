@@ -10,5 +10,6 @@ public interface ICartManager
     void ResetAll();
 
     void ShowStatus();
-
+    
+    void WriteCsvReport();
 }

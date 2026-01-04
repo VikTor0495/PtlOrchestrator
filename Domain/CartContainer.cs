@@ -67,4 +67,5 @@ public sealed class CartContainer(IEnumerable<Cart> carts)
             assignment.Basket.Barcode);
     }
 
+    public IEnumerable<Cart> GetCarts() => _carts;
 }

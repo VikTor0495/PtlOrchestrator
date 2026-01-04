@@ -5,6 +5,8 @@ using PtlOrchestrator.Service;
 using PtlOrchestrator.Manager;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PtlOrchestrator.Builder;
+using PtlOrchestrator.Domain.File;
 
 namespace PtlOrchestrator.Manager.Impl;
 
@@ -15,7 +17,11 @@ public sealed class CartManager(
 {
 
     private readonly CartContainer _cartContainer = cartContainer;
+
     private readonly IPtlCommandService _ptlCommandService = ptlCommandService;
+
+    private readonly List<WorkedProduct> _workedProducts = [];
+
     private readonly ILogger<CartManager> _logger = logger;
 
     private readonly object _lock = new();
@@ -48,11 +54,14 @@ public sealed class CartManager(
 
             try
             {
-                _ptlCommandService.SendAsync(
-                    result.Basket.BasketId,
-                    BuildActivation(result),
-                    CancellationToken.None
-                ).GetAwaiter().GetResult();
+                SendAddCommandAndWaitConfirm(result);
+
+                if (result.Basket.IsFull)
+                {
+                    SendFullBasketCommand(result);
+                }
+
+                AddCsvRecord(result);
             }
             catch (Exception ex)
             {
@@ -64,17 +73,76 @@ public sealed class CartManager(
 
                 Rollback(result);
 
-                throw; // oppure ritorni result fallito
+                throw;
             }
+
 
             return result;
         }
     }
 
+    private void AddCsvRecord(CartAssignmentResult result)
+    {
+        if (result != null && result.Basket != null)
+        {
+            _workedProducts.Add(new WorkedProduct(
+            DateTime.UtcNow,
+            result.Cart!.CartId.ToString(),
+            result.Basket.BasketId,
+            result.Basket.Barcode!,
+            result.Basket.CurrentQuantity
+            ));
+        }
+    }
+
+    private void SendFullBasketCommand(CartAssignmentResult result)
+    {
+        if (result != null && result.Basket != null)
+        {
+            _ptlCommandService.SendAsync(
+                result.Basket.BasketId,
+                PtlActivationCommandBuilder.BuildRedFixedActivation(result.Basket),
+                CancellationToken.None
+            ).GetAwaiter().GetResult();
+        }
+    }
+
+    private void SendAddCommandAndWaitConfirm(CartAssignmentResult result)
+    {
+        if (result != null && result.Basket != null)
+        {
+            _ptlCommandService.SendAsync(result.Basket.BasketId,
+                PtlActivationCommandBuilder.BuildGreenActivation(result.Basket),
+                CancellationToken.None)
+            .GetAwaiter().GetResult();
+
+            _ptlCommandService.WaitForButtonAsync(
+                result.Basket.BasketId,
+                CancellationToken.None
+            ).GetAwaiter().GetResult();
+
+            _logger.LogInformation(
+                "Conferma ricevuta per Cart {CartId}, Basket {BasketId}",
+                result.Cart!.CartId,
+                result.Basket.BasketId);
+        }
+    }
 
     public void ResetAll()
     {
+        foreach (var basket in _cartContainer.GetCarts().SelectMany(c => c.Baskets))
+        {
+            _ptlCommandService.SendAsync(
+                basket.BasketId,
+                PtlActivationCommandBuilder.BuildOffActivation(),
+                CancellationToken.None
+            ).GetAwaiter().GetResult();
+        }
+
         _cartContainer.ResetAll();
+
+        _workedProducts.Clear();
+
         _logger.LogInformation("Reset completo di tutti i carrelli");
     }
 
@@ -86,30 +154,41 @@ public sealed class CartManager(
     private void Rollback(CartAssignmentResult assignment)
     {
         _cartContainer.Rollback(assignment);
-
     }
 
-    private static PtlActivation BuildActivation(CartAssignmentResult result)
-{
-    var basket = result.Basket!;
-
-    // Basket pieno → ROSSO fisso
-    if (basket.IsFull)
+    public void WriteCsvReport()
     {
-        return new PtlActivation
+        if (_workedProducts.Count == 0)
+            return;
+        try
         {
-            Color = PtlColor.Red,
-            Blinking = false,
-            DisplayText = basket.CurrentQuantity.ToString() + "/" + basket.MaxQuantity.ToString()
-        };
-    }
+            _logger .LogInformation("Generazione report CSV...");
 
-    // Inserimento normale → VERDE lampeggiante
-    return new PtlActivation
-    {
-        Color = PtlColor.Green,
-        Blinking = true,
-        DisplayText = basket.CurrentQuantity.ToString() + "/" + basket.MaxQuantity.ToString()
-    };
-}
+            var baseDir = AppContext.BaseDirectory;
+            var reportDir = Path.Combine(baseDir, "report");
+
+            Directory.CreateDirectory(reportDir);
+
+            var fileName = $"ptl-report-{DateTime.Now:yyyyMMdd-HHmmss}.csv";
+            var filePath = Path.Combine(reportDir, fileName);
+            using var writer = new StreamWriter(new FileStream(filePath, FileMode.Create), System.Text.Encoding.UTF8);
+
+            writer.WriteLine("Timestamp,CartId,BasketId,Barcode,Quantity");
+
+            foreach (var r in _workedProducts)
+            {
+                writer.WriteLine(
+                    $"{r.Timestamp:O}," +
+                    $"{r.CartId}," +
+                    $"{r.BasketId}," +
+                    $"{r.Barcode}," +
+                    $"{r.Quantity}");
+            }
+        } catch (Exception)
+        {
+            _logger.LogError("Errore durante la generazione del report CSV");
+        }
+
+
+    }
 }

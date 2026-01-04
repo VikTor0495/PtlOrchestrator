@@ -29,30 +29,25 @@ public class Worker(
             _logger.LogInformation("PTL Worker starting");
 
             await _connectionService.EnsureConnectedAsync(cancellationToken);
-            
+
+            _cartManager.ResetAll();
+
             ShowStartupLogs();
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                 
+
                     var input = await _barcodeInput.ReadInputAsync(cancellationToken);
 
-                    if (string.IsNullOrWhiteSpace(input))
-                        continue;
-
-                    if (await HandleSpecialCommandAsync(input, cancellationToken))
+                    if (string.IsNullOrWhiteSpace(input) || await HandleSpecialCommandAsync(input, cancellationToken))
                         continue;
 
                     var result = _cartManager.ProcessBarcode(input);
 
                     if (!result.Success)
                         continue;
-
-                    _logger.LogInformation("Posizionare su basket {BasketId} carrello {CartId}", result.Basket!.BasketId, result.Cart!.CartId);
-
-                    _logger.LogInformation(""); 
                 }
                 catch (OperationCanceledException)
                 {
@@ -88,24 +83,13 @@ public class Worker(
                 _appLifetime.StopApplication();
                 return true;
 
-            case "status":  
+            case "status":
                 _logger.LogInformation("Richiesta stato carrelli...");
                 _cartManager.ShowStatus();
                 return true;
             case "reset":
-                _logger.LogInformation("Richiesta reset carrelli...");
-                _logger.LogInformation("Confermi reset? (s/n):");
-                
-                var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
-                if (confirmation?.ToLower() is "s" or "si" or "y" or "yes")
-                {
-                    _cartManager.ResetAll();
-                    _logger.LogInformation("Reset completato");
-                }
-                else
-                {
-                    _logger.LogInformation("Reset annullato");
-                }
+                _cartManager.WriteCsvReport();
+                await HandleResetAsync(cancellationToken);
                 return true;
 
             case "help":
@@ -114,11 +98,11 @@ public class Worker(
                 return true;
 
             default:
-                return false; 
+                return false;
         }
     }
 
-    private void ShowStartupLogs() 
+    private static void ShowStartupLogs()
     {
         Console.WriteLine("╔═══════════════════════════════════════════════╗");
         Console.WriteLine("║   BARCODE CART MANAGER - WORKER SERVICE       ║");
@@ -127,12 +111,27 @@ public class Worker(
         Console.WriteLine("Sistema inizializzato correttamente\n");
         Console.WriteLine("Comandi disponibili:\n");
         Console.WriteLine("- 'status' - Mostra stato carrelli\n");
-        Console.WriteLine("- 'reset' - Reset di tutti i carrelli\n");
-        Console.WriteLine("- 'exit' - Esci dal programma\n");
+        Console.WriteLine("- 'reset' - Reset di tutti i carrelli (Genera report)\n");
+        Console.WriteLine("- 'exit/quit' - Esci dal programma (Genera report)\n");
         Console.WriteLine("Pronto per ricevere input!\n");
         Console.WriteLine(new string('─', 50));
         Console.WriteLine("");
-        
+
+    }
+
+    private async Task HandleResetAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Confermi reset? (s/n):");
+        var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
+        if (confirmation?.ToLower() is "s" or "si" or "y" or "yes")
+        {
+            _cartManager.ResetAll();
+            _logger.LogInformation("Reset completato");
+        }
+        else
+        {
+            _logger.LogInformation("Reset annullato");
+        }
     }
 
 }
