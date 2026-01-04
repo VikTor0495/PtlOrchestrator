@@ -1,8 +1,8 @@
 namespace PtlOrchestrator.Domain;
 
-public sealed class Basket(int basketId, int maxQuantity)
+public sealed class Basket(string basketId, int maxQuantity)
 {
-    public int BasketId { get; } = basketId;
+    public string BasketId { get; } = basketId;
     public int MaxQuantity { get; } = maxQuantity;
 
     private string? _barcode;

@@ -3,6 +3,8 @@ using PtlOrchestrator.Service;
 using PtlOrchestrator.Service.Impl;
 using PtlOrchestrator.Input;
 using PtlOrchestrator.Input.Impl;
+using PtlOrchestrator.Manager;
+using PtlOrchestrator.Manager.Impl;
 using PtlOrchestrator.Configuration;
 using PtlOrchestrator.Configuration.Formatter;
 using PtlOrchestrator.Domain;
@@ -46,6 +48,7 @@ builder.Services.AddSingleton<CartContainer>(sp =>
 builder.Services.AddSingleton<ICartManager, CartManager>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
 builder.Services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
+builder.Services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

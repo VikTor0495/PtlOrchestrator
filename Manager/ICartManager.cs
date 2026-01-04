@@ -1,4 +1,4 @@
-namespace PtlOrchestrator.Service;
+namespace PtlOrchestrator.Manager;
 
 using PtlOrchestrator.Domain;
 

@@ -7,13 +7,12 @@ namespace PtlOrchestrator.Builders;
 public static class Pp505Builder
 {
     public static string Build(
-        int moduleAddress,
+        string moduleAddress,
         PtlActivation activation)
     {
         Validate(moduleAddress, activation);
 
         var ledCode = BuildLedCode(activation);
-        var address = moduleAddress.ToString($"D{PtlConstants.ModuleAddressLength}");
         var display = activation.DisplayText ?? string.Empty;
 
         return string.Concat(
@@ -23,8 +22,7 @@ public static class Pp505Builder
             PtlConstants.LedModePrefix,
             ledCode,
             PtlConstants.AddressSeparator,
-            address,
-            PtlConstants.DisplaySeparator,
+            moduleAddress,
             display
         );
     }
@@ -44,10 +42,10 @@ public static class Pp505Builder
     }
 
     private static void Validate(
-        int moduleAddress,
+        string moduleAddress,
         PtlActivation activation)
     {
-        if (moduleAddress < 0 || moduleAddress > 9999)
+        if (int.TryParse(moduleAddress, out var address) && (address < 0 || address > 9999))
             throw new ArgumentOutOfRangeException(
                 nameof(moduleAddress),
                 "Module address deve essere tra 0 e 9999");
