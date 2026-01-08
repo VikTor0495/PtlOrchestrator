@@ -6,13 +6,14 @@ using PtlOrchestrator.Manager;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Builder;
-using PtlOrchestrator.Domain.File;
+using PtlOrchestrator.Report;
 
 namespace PtlOrchestrator.Manager.Impl;
 
 public sealed class CartManager(
     CartContainer cartContainer,
     IPtlCommandService ptlCommandService,
+    ICartReportWriter cartReportWriter,
     ILogger<CartManager> logger) : ICartManager
 {
 
@@ -20,7 +21,8 @@ public sealed class CartManager(
 
     private readonly IPtlCommandService _ptlCommandService = ptlCommandService;
 
-    private readonly List<WorkedProduct> _workedProducts = [];
+    private readonly ICartReportWriter _cartReportWriter = cartReportWriter;
+
 
     private readonly ILogger<CartManager> _logger = logger;
 
@@ -60,8 +62,6 @@ public sealed class CartManager(
                 {
                     SendFullBasketCommand(result);
                 }
-
-                AddCsvRecord(result);
             }
             catch (Exception ex)
             {
@@ -78,20 +78,6 @@ public sealed class CartManager(
 
 
             return result;
-        }
-    }
-
-    private void AddCsvRecord(CartAssignmentResult result)
-    {
-        if (result != null && result.Basket != null)
-        {
-            _workedProducts.Add(new WorkedProduct(
-            DateTime.UtcNow,
-            result.Cart!.CartId.ToString(),
-            result.Basket.BasketId,
-            result.Basket.Barcode!,
-            result.Basket.CurrentQuantity
-            ));
         }
     }
 
@@ -130,18 +116,12 @@ public sealed class CartManager(
 
     public void ResetAll()
     {
-        foreach (var basket in _cartContainer.GetCarts().SelectMany(c => c.Baskets))
+        foreach (var basket in _cartContainer.GetCarts().SelectMany(c => c.GetBaskets))
         {
-            _ptlCommandService.SendAsync(
-                basket.BasketId,
-                PtlActivationCommandBuilder.BuildOffActivation(),
-                CancellationToken.None
-            ).GetAwaiter().GetResult();
+            TryToResetBasket(basket.BasketId);
         }
 
         _cartContainer.ResetAll();
-
-        _workedProducts.Clear();
 
         _logger.LogInformation("Reset completo di tutti i carrelli");
     }
@@ -156,39 +136,26 @@ public sealed class CartManager(
         _cartContainer.Rollback(assignment);
     }
 
-    public void WriteCsvReport()
+    private void TryToResetBasket(string basketId)
     {
-        if (_workedProducts.Count == 0)
-            return;
         try
         {
-            _logger .LogInformation("Generazione report CSV...");
-
-            var baseDir = AppContext.BaseDirectory;
-            var reportDir = Path.Combine(baseDir, "report");
-
-            Directory.CreateDirectory(reportDir);
-
-            var fileName = $"ptl-report-{DateTime.Now:yyyyMMdd-HHmmss}.csv";
-            var filePath = Path.Combine(reportDir, fileName);
-            using var writer = new StreamWriter(new FileStream(filePath, FileMode.Create), System.Text.Encoding.UTF8);
-
-            writer.WriteLine("Timestamp,CartId,BasketId,Barcode,Quantity");
-
-            foreach (var r in _workedProducts)
-            {
-                writer.WriteLine(
-                    $"{r.Timestamp:O}," +
-                    $"{r.CartId}," +
-                    $"{r.BasketId}," +
-                    $"{r.Barcode}," +
-                    $"{r.Quantity}");
-            }
-        } catch (Exception)
+            _ptlCommandService.SendAsync(
+                basketId,
+                PtlActivationCommandBuilder.BuildOffActivation(),
+                CancellationToken.None
+            ).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
         {
-            _logger.LogError("Errore durante la generazione del report CSV");
+            _logger.LogError("Errore durante il reset del basket {BasketId}: {errorMessage}", basketId, ex.Message);
         }
 
 
+    }
+
+    public void WriteCsvReport()
+    {
+        _cartReportWriter.Write(_cartContainer.GetCarts());
     }
 }

@@ -30,7 +30,7 @@ public sealed class CartContainer(IEnumerable<Cart> carts)
         {
             Console.WriteLine($"Carrello {cart.CartId}:");
 
-            foreach (var basket in cart.Baskets)
+            foreach (var basket in cart.GetBaskets)
             {
                 if (basket.IsEmpty)
                 {

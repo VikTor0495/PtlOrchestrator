@@ -5,7 +5,7 @@ public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
     public int CartId { get; } = cartId;
     private readonly List<Basket> _baskets = [.. baskets];
 
-    public IReadOnlyCollection<Basket> Baskets => _baskets;
+    public IReadOnlyCollection<Basket> GetBaskets => _baskets;
 
     public CartAssignmentResult TryAddItem(string barcode)
     {

@@ -1,20 +1,13 @@
+using System.Text;
 using Microsoft.Extensions.Logging;
 
 namespace PtlOrchestrator.Input.Impl;
 
-/// <summary>
-/// Servizio di input da Console per lettura barcode
-/// </summary>
-public class ConsoleBarcodeInputService : IBarcodeInputService
+public class ConsoleBarcodeInputService(ILogger<ConsoleBarcodeInputService> logger) : IBarcodeInputService
 {
-    private readonly ILogger<ConsoleBarcodeInputService> _logger;
+    private readonly ILogger<ConsoleBarcodeInputService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public ConsoleBarcodeInputService(ILogger<ConsoleBarcodeInputService> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
-    /// <inheritdoc/>
     public Task<string?> ReadInputAsync(CancellationToken cancellationToken = default)
     {
         return Task.Run(() =>
@@ -53,5 +46,5 @@ public class ConsoleBarcodeInputService : IBarcodeInputService
                 return null;
             }
         }, cancellationToken);
-    }
+    } 
 }

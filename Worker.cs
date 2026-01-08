@@ -88,8 +88,9 @@ public class Worker(
                 _cartManager.ShowStatus();
                 return true;
             case "reset":
+                await HandleResetConsoleMessageAsync(cancellationToken);
                 _cartManager.WriteCsvReport();
-                await HandleResetAsync(cancellationToken);
+                _cartManager.ResetAll();
                 return true;
 
             case "help":
@@ -119,13 +120,12 @@ public class Worker(
 
     }
 
-    private async Task HandleResetAsync(CancellationToken cancellationToken)
+    private async Task HandleResetConsoleMessageAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Confermi reset? (s/n):");
         var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
         if (confirmation?.ToLower() is "s" or "si" or "y" or "yes")
         {
-            _cartManager.ResetAll();
             _logger.LogInformation("Reset completato");
         }
         else
