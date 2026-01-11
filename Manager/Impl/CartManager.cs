@@ -6,7 +6,7 @@ using PtlOrchestrator.Manager;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Builder;
-using PtlOrchestrator.Report;
+using PtlOrchestrator.File;
 
 namespace PtlOrchestrator.Manager.Impl;
 
@@ -14,6 +14,7 @@ public sealed class CartManager(
     CartContainer cartContainer,
     IPtlCommandService ptlCommandService,
     ICartReportWriter cartReportWriter,
+    IBasketLimitService basketLimitService,
     ILogger<CartManager> logger) : ICartManager
 {
 
@@ -22,6 +23,8 @@ public sealed class CartManager(
     private readonly IPtlCommandService _ptlCommandService = ptlCommandService;
 
     private readonly ICartReportWriter _cartReportWriter = cartReportWriter;
+
+    private readonly IBasketLimitService _basketLimitService = basketLimitService;
 
 
     private readonly ILogger<CartManager> _logger = logger;
@@ -35,16 +38,17 @@ public sealed class CartManager(
 
         lock (_lock)
         {
-            result = _cartContainer.AssignItem(barcode);
+            if (!_basketLimitService.HasMaxLimit(barcode))
+            {
+                return CartAssignmentResult.Rejected(
+                    $"Barcode {barcode} non censito nel sistema dei limiti");
+            }
+
+            result = _cartContainer.AssignItem(barcode, _basketLimitService.GetMaxFor(barcode));
 
             if (!result.Success)
             {
-                _logger.LogWarning(
-                    "RIFIUTATO barcode {Barcode}: {Reason}",
-                    barcode,
-                    result.Reason);
                 return result;
-
             }
 
             _logger.LogInformation(
@@ -128,7 +132,7 @@ public sealed class CartManager(
 
     public void ShowStatus()
     {
-        _cartContainer.ShowStatus();
+        _logger.LogInformation("{CartStatus}", _cartContainer.GetStatusString());
     }
 
     private void Rollback(CartAssignmentResult assignment)

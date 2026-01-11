@@ -8,15 +8,20 @@ using PtlOrchestrator.Manager.Impl;
 using PtlOrchestrator.Configuration;
 using PtlOrchestrator.Configuration.Formatter;
 using PtlOrchestrator.Domain;
-using PtlOrchestrator.Report;
-using PtlOrchestrator.Report.Impl;
+using PtlOrchestrator.File;
+using PtlOrchestrator.File.Impl;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Registra configurazione tipizzata (Options Pattern)
+// Registra configurazioni tipizzate
+builder.Configuration.AddJsonFile(
+    "appsettings.json",
+    optional: false,
+    reloadOnChange: true); // reload a caldo
+
 builder.Services
     .AddOptions<LightstepOptions>()
     .Bind(builder.Configuration.GetSection("Lightstep"))
@@ -39,12 +44,18 @@ builder.Services.AddSingleton(sp =>
             cartCfg.Baskets.Select(b =>
                 new Basket(
                     basketId: b.BasketId,
-                    maxQuantity: b.MaxQuantity))
+                    maxQuantity: 0))
         )
     ).ToList();
 
     return new CartContainer(carts);
 });
+
+builder.Services
+    .AddOptions<BarcodeLimitOptions>()
+    .Bind(builder.Configuration.GetSection("LimitBarcode"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.FileName), "FileName non valido")
+    .ValidateOnStart();
 
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
@@ -52,6 +63,9 @@ builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>(
 builder.Services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
 builder.Services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
 builder.Services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();
+builder.Services.AddSingleton<CsvBarcodeLimitReader, CsvBarcodeLimitReader>();
+builder.Services.AddSingleton<IBasketLimitService, BasketLimitService>();
+builder.Services.AddSingleton<IFileReader<BarcodeLimit>, CsvBarcodeLimitReader>();
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

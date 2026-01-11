@@ -1,6 +1,6 @@
 using PtlOrchestrator.Domain;
 
-namespace PtlOrchestrator.Report;
+namespace PtlOrchestrator.File;
 
 public interface ICartReportWriter
 {

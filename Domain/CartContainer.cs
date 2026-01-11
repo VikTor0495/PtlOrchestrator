@@ -1,15 +1,17 @@
 
+using System.Text;
+
 namespace PtlOrchestrator.Domain;
 
 public sealed class CartContainer(IEnumerable<Cart> carts)
 {
     private readonly List<Cart> _carts = [.. carts];
 
-    public CartAssignmentResult AssignItem(string barcode)
+    public CartAssignmentResult AssignItem(string barcode, int maxQuantity)
     {
         foreach (var cart in _carts)
         {
-            var result = cart.TryAddItem(barcode);
+            var result = cart.TryAddItem(barcode, maxQuantity);
             if (result.Success)
                 return result;
         }
@@ -21,36 +23,39 @@ public sealed class CartContainer(IEnumerable<Cart> carts)
     public void ResetAll()
         => _carts.ForEach(c => c.Reset());
 
-    public void ShowStatus()
+    public string GetStatusString()
     {
-        Console.WriteLine("");
-        Console.WriteLine("═══════════════ STATO CARRELLI ═══════════════");
+        var sb = new StringBuilder();
+
+        sb.AppendLine("");
+        sb.AppendLine("═══════════════ STATO CARRELLI ═══════════════");
 
         foreach (var cart in _carts)
         {
-            Console.WriteLine($"Carrello {cart.CartId}:");
+            sb.AppendLine($"Carrello {cart.CartId}:");
 
             foreach (var basket in cart.GetBaskets)
             {
                 if (basket.IsEmpty)
                 {
-                    Console.WriteLine(
-                        $"  - Basket {basket.BasketId}: VUOTO (max {basket.MaxQuantity})");
+                    sb.AppendLine(
+                        $"  - Basket {basket.BasketId}: VUOTO (max non settato)");
                 }
                 else
                 {
-                    Console.WriteLine(
+                    sb.AppendLine(
                         $"  - Basket {basket.BasketId}: " +
                         $"{basket.CurrentQuantity}/{basket.MaxQuantity} " +
                         $"[{basket.Barcode}]");
                 }
             }
 
-            Console.WriteLine("");
+            sb.AppendLine("");
         }
 
-        Console.WriteLine("══════════════════════════════════════════════");
-        Console.WriteLine("");
+        sb.AppendLine("══════════════════════════════════════════════");
+        sb.AppendLine("");
+        return sb.ToString();
     }
 
     public void Rollback(CartAssignmentResult assignment)

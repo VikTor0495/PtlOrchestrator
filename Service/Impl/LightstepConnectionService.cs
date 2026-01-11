@@ -12,43 +12,54 @@ public sealed class LightstepConnectionService(
 {
     private readonly LightstepOptions _options = options.Value;
     private readonly ILogger<LightstepConnectionService> _logger = logger;
+    /* 
+        private readonly object _sync = new(); */
 
-    private readonly object _sync = new();
-    
     private EthernetController? _controller;
 
     public bool IsConnected => _controller?.IsConnected == true;
 
-    public async Task EnsureConnectedAsync(CancellationToken ct)
+    public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
     {
         if (IsConnected)
             return;
 
-        await Task.Run(() =>
+        EthernetController controller;
+
+        while (!IsConnected)
         {
-            lock (_sync)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
             {
+
                 if (IsConnected)
                     return;
 
-                ct.ThrowIfCancellationRequested();
-
                 _logger.LogInformation(
-                    "Connessione Lightstep a {Ip}:{Port}",
+                    "Tentativo connessione al Controller PTL {Ip}:{Port}",
                     _options.ControllerIp,
                     _options.ControllerPort);
 
-                var controller = new EthernetController();
+                controller = new EthernetController();
                 controller.SetLicense(_options.LicenzeKey);
+
                 controller.Connect(
                     _options.ControllerIp,
                     _options.ControllerPort);
 
                 _controller = controller;
 
-                _logger.LogInformation("Lightstep connesso correttamente");
+                _logger.LogInformation("Controller PTL connesso correttamente");
+                return;
             }
-        }, ct);
+            catch (Exception)
+            {
+                _logger.LogWarning(
+                    "Connessione al Controller PTL fallita. Nuovo tentativo tra 10 secondi...");
+                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+            }
+        }
     }
 
     public EthernetController GetController()
@@ -62,14 +73,27 @@ public sealed class LightstepConnectionService(
 
     public void Disconnect()
     {
-        lock (_sync)
-        {
-            if (_controller == null)
-                return;
+        var controller = _controller;
+        if (controller == null)
+            return;
 
-            _logger.LogInformation("Disconnessione Lightstep");
-            _controller.Close();
-            _controller = null;
-        }
+        _logger.LogInformation("Disconnessione Controller PTL");
+
+        _controller = null;
+
+        Task.Run(() =>
+        {
+            try
+            {
+                controller.Close();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Errore durante disconnessione Controller PTL");
+            }
+        });
     }
+
 }

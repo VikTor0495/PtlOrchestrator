@@ -1,5 +1,4 @@
 namespace PtlOrchestrator.Domain;
-
 public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
 {
     public int CartId { get; } = cartId;
@@ -7,7 +6,7 @@ public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
 
     public IReadOnlyCollection<Basket> GetBaskets => _baskets;
 
-    public CartAssignmentResult TryAddItem(string barcode)
+    public CartAssignmentResult TryAddItem(string barcode, int maxQuantity)
     {
         var existing = _baskets
             .FirstOrDefault(b => b.Barcode == barcode && !b.IsFull);
@@ -21,6 +20,7 @@ public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
         var empty = _baskets.FirstOrDefault(b => b.IsEmpty);
         if (empty is not null)
         {
+            empty.UpdateMaxQuantity(maxQuantity);
             empty.AddItem(barcode);
             return CartAssignmentResult.NewItem(this, empty);
         }

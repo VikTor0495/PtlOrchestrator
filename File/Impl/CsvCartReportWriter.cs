@@ -1,6 +1,6 @@
 using PtlOrchestrator.Domain;
 
-namespace PtlOrchestrator.Report.Impl;
+namespace PtlOrchestrator.File.Impl;
 
 public sealed class CsvCartReportWriter(
     ILogger<CsvCartReportWriter> logger
@@ -41,6 +41,9 @@ public sealed class CsvCartReportWriter(
         {
             foreach (var basket in cart.GetBaskets)
             {
+                if (basket.IsEmpty)
+                    continue;
+                    
                 writer.WriteLine(
                     $"{cart.CartId};" +
                     $"{basket.BasketId};" +
