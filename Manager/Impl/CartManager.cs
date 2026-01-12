@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Builder;
 using PtlOrchestrator.File;
+using System.Threading;
 
 namespace PtlOrchestrator.Manager.Impl;
 
@@ -32,8 +33,9 @@ public sealed class CartManager(
     private readonly object _lock = new();
 
 
-    public CartAssignmentResult ProcessBarcode(string barcode)
+    public CartAssignmentResult ProcessBarcode(string barcode, CancellationToken cancellationToken)
     {
+
         CartAssignmentResult result;
 
         lock (_lock)
@@ -41,7 +43,7 @@ public sealed class CartManager(
             if (!_basketLimitService.HasMaxLimit(barcode))
             {
                 return CartAssignmentResult.Rejected(
-                    $"Barcode {barcode} non censito nel sistema dei limiti");
+                    $"Barcode {barcode} non presente nel file di configurazione dei limiti di carico");
             }
 
             result = _cartContainer.AssignItem(barcode, _basketLimitService.GetMaxFor(barcode));
@@ -60,12 +62,7 @@ public sealed class CartManager(
 
             try
             {
-                SendAddCommandAndWaitConfirm(result);
-
-                if (result.Basket.IsFull)
-                {
-                    SendFullBasketCommand(result);
-                }
+                HandlePickingProcessFlow(result, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -85,49 +82,94 @@ public sealed class CartManager(
         }
     }
 
-    private void SendFullBasketCommand(CartAssignmentResult result)
+    private void HandlePickingProcessFlow(CartAssignmentResult result, CancellationToken cancellationToken)
     {
         if (result != null && result.Basket != null)
         {
-            _ptlCommandService.SendAsync(
-                result.Basket.BasketId,
-                PtlActivationCommandBuilder.BuildRedFixedActivation(result.Basket),
-                CancellationToken.None
-            ).GetAwaiter().GetResult();
-        }
-    }
+            HandlePickLightFlow(result.Basket.BasketId, cancellationToken);
 
-    private void SendAddCommandAndWaitConfirm(CartAssignmentResult result)
-    {
-        if (result != null && result.Basket != null)
-        {
-            _ptlCommandService.SendAsync(result.Basket.BasketId,
-                PtlActivationCommandBuilder.BuildGreenActivation(result.Basket),
-                CancellationToken.None)
-            .GetAwaiter().GetResult();
-
-            _ptlCommandService.WaitForButtonAsync(
-                result.Basket.BasketId,
-                CancellationToken.None
-            ).GetAwaiter().GetResult();
+            HandleOperatorConfirmationFlow(result.Basket.BasketId, cancellationToken);
 
             _logger.LogInformation(
                 "Conferma ricevuta per Cart {CartId}, Basket {BasketId}",
                 result.Cart!.CartId,
                 result.Basket.BasketId);
+
+            Thread.Sleep(1000);
+
+            ResetAllBaskets();
+        }
+    }
+
+    private void HandlePickLightFlow(string basketId, CancellationToken cancellationToken)
+    {
+        _ptlCommandService.SendAsync(basketId,
+               PtlActivationCommandBuilder.BuildPickFlowCommand(), cancellationToken)
+           .GetAwaiter().GetResult();
+
+        ArmsOtherBaskets(basketId, cancellationToken);
+    }
+
+    private void HandleOperatorConfirmationFlow(string basketId, CancellationToken cancellationToken)
+    {
+        string confirmedModule;
+
+        do
+        {
+            confirmedModule = _ptlCommandService.WaitForButtonAsync(
+                basketId,
+                cancellationToken
+            ).GetAwaiter().GetResult();
+
+            if (confirmedModule != basketId)
+            {
+                _ptlCommandService.SendAsync(confirmedModule,
+                    PtlActivationCommandBuilder.BuildErrorCommand(), cancellationToken)
+                .GetAwaiter().GetResult();
+
+                _logger.LogWarning(
+                "Conferma ricevuta da modulo inatteso {ConfirmedModule}, in attesa di {ExpectedModule}. \n Riposizionare nel modulo corretto!",
+                confirmedModule,
+                basketId);
+
+                _ptlCommandService.WaitForButtonAsync(
+                                basketId,
+                                cancellationToken
+                            ).GetAwaiter().GetResult();
+                
+                ArmsOtherBaskets(basketId, cancellationToken);
+            }
+
+        } while (confirmedModule != basketId);
+    }
+
+    private void ArmsOtherBaskets(string excludingBasketId, CancellationToken cancellationToken)
+    {
+        foreach (var basket in _cartContainer.GetCarts()
+            .SelectMany(c => c.GetBaskets)
+            .Where(b => b.BasketId != excludingBasketId))
+        {
+            _ptlCommandService.SendRawAsync(basket.BasketId,
+                 Pp505Builder.BuildArmedNoLight(basket.BasketId), cancellationToken
+            ).GetAwaiter().GetResult();
         }
     }
 
     public void ResetAll()
     {
-        foreach (var basket in _cartContainer.GetCarts().SelectMany(c => c.GetBaskets))
-        {
-            TryToResetBasket(basket.BasketId);
-        }
+        ResetAllBaskets();
 
         _cartContainer.ResetAll();
 
         _logger.LogInformation("Reset completo di tutti i carrelli");
+    }
+
+    private void ResetAllBaskets()
+    {
+        foreach (var basket in _cartContainer.GetCarts().SelectMany(c => c.GetBaskets))
+        {
+            TryToResetBasket(basket.BasketId);
+        }
     }
 
     public void ShowStatus()
@@ -146,7 +188,7 @@ public sealed class CartManager(
         {
             _ptlCommandService.SendAsync(
                 basketId,
-                PtlActivationCommandBuilder.BuildOffActivation(),
+                PtlActivationCommandBuilder.BuildOffCommand(),
                 CancellationToken.None
             ).GetAwaiter().GetResult();
         }

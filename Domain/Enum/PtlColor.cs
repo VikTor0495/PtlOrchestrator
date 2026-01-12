@@ -5,5 +5,6 @@ public enum PtlColor
 {
     Off,
     Green,
-    Red
+    Red,
+    Check,
 }

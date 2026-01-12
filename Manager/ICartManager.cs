@@ -5,7 +5,7 @@ using PtlOrchestrator.Domain;
 
 public interface ICartManager
 {
-    CartAssignmentResult ProcessBarcode(string barcode);
+    CartAssignmentResult ProcessBarcode(string barcode, CancellationToken cancellationToken);
 
     void ResetAll();
 

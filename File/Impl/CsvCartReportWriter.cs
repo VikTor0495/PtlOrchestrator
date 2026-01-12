@@ -11,8 +11,11 @@ public sealed class CsvCartReportWriter(
 
     public void Write(IEnumerable<Cart> carts)
     {
-        if (!carts.Any())
+        if (!carts.Any() || !carts.Any(cart => cart.GetBaskets.Any(basket => !basket.IsEmpty)))
+        {
+            _logger.LogInformation("CSV non generato perchè non ci sono prodotti nel carrello.");
             return;
+        }
 
         TryToWhriteCsvReport(carts);
     }

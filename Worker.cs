@@ -7,6 +7,7 @@ using PtlOrchestrator.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Threading.Channels;
 
 namespace PtlOrchestrator;
 
@@ -18,9 +19,18 @@ public sealed class Worker : BackgroundService
     private readonly ILightstepConnectionService _connectionService;
     private readonly IBasketLimitService _basketLimitService;
     private readonly IOptionsMonitor<BarcodeLimitOptions> _optionsMonitor;
+    private readonly IAppProcessingState _appProcessingState;
     private readonly ILogger<Worker> _logger;
+    private int firstBarcode = 0;
 
     private string _currentCsvPath = string.Empty;
+
+    private readonly Channel<string> _barcodeChannel =
+        Channel.CreateBounded<string>(new BoundedChannelOptions(1)
+        {
+            FullMode = BoundedChannelFullMode.DropWrite
+            // oppure Wait se vuoi bloccare l'input
+        });
 
     public Worker(
         ICartManager cartManager,
@@ -29,6 +39,7 @@ public sealed class Worker : BackgroundService
         ILightstepConnectionService lightstepConnectionService,
         IBasketLimitService basketLimitService,
         IOptionsMonitor<BarcodeLimitOptions> optionsMonitor,
+        IAppProcessingState appProcessingState,
         ILogger<Worker> logger)
     {
         _cartManager = cartManager;
@@ -38,9 +49,87 @@ public sealed class Worker : BackgroundService
         _basketLimitService = basketLimitService;
         _optionsMonitor = optionsMonitor;
         _logger = logger;
+        _appProcessingState = appProcessingState;
 
         // 🔁 Hook reload a caldo
         _optionsMonitor.OnChange(OnBarcodeLimitOptionsChanged);
+    }
+
+    private void ReadInputLoop(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+
+                if (firstBarcode == 0)
+                {
+                    firstBarcode = 1;
+                    _logger.LogInformation("Barcode >");
+                }
+
+                var input = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    _logger.LogInformation("Barcode >");
+                    continue;
+                }
+
+                if (_appProcessingState.IsBusy)
+                {
+                    _logger.LogWarning(
+                        "Input '{Input}' ignorato: sistema occupato",
+                        input.Trim());
+                    continue;
+                }
+
+                // comandi fuori dal channel
+                if (HandleSpecialCommandAsync(input, ct))
+                {
+                    _logger.LogInformation("Barcode >");
+                    continue;
+                }
+
+
+                if (!_barcodeChannel.Writer.TryWrite(input.Trim()))
+                {
+                    _logger.LogWarning("Input scartato: sistema occupato");
+                }
+            }
+        }
+        finally
+        {
+            _barcodeChannel.Writer.TryComplete();
+        }
+    }
+
+    private async Task ProcessLoop(CancellationToken ct)
+    {
+        await foreach (var barcode in _barcodeChannel.Reader.ReadAllAsync(ct))
+        {
+            try
+            {
+                if (!_appProcessingState.TryEnter())
+                    continue;
+
+                var result = _cartManager.ProcessBarcode(barcode, ct);
+
+                if (!result.Success)
+                {
+                    _logger.LogWarning("RIFIUTATO: {Reason}", result.Reason);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore processamento barcode");
+            }
+            finally
+            {
+                _appProcessingState.Exit();
+                _logger.LogInformation("Barcode > ");
+            }
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -56,28 +145,26 @@ public sealed class Worker : BackgroundService
             _cartManager.ResetAll();
             ShowStartupLogs();
 
-            while (!cancellationToken.IsCancellationRequested)
+            /* while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
+
                     var input = await _barcodeInput.ReadInputAsync(cancellationToken);
 
-                    if (string.IsNullOrWhiteSpace(input))
+                    if (string.IsNullOrWhiteSpace(input) || await HandleSpecialCommandAsync(input, cancellationToken))
                         continue;
 
-                    if (await HandleSpecialCommandAsync(input, cancellationToken))
-                        continue;
-
-                    var result = _cartManager.ProcessBarcode(input);
+                    var result = _cartManager.ProcessBarcode(input, cancellationToken);
 
                     if (!result.Success)
                     {
                         _logger.LogWarning(
                             "RIFIUTATO barcode {Barcode}: {Reason}",
                             input,
-                            result.Reason);                       
-                        continue;
+                            result.Reason);
                     }
+
                 }
                 catch (OperationCanceledException)
                 {
@@ -87,7 +174,13 @@ public sealed class Worker : BackgroundService
                 {
                     _logger.LogError(ex, "Errore durante elaborazione barcode");
                 }
-            }
+            } */
+
+
+            var inputTask = Task.Run(() => ReadInputLoop(cancellationToken), cancellationToken);
+            var processTask = Task.Run(() => ProcessLoop(cancellationToken), cancellationToken);
+
+            await Task.WhenAll(inputTask, processTask);
         }
         catch (OperationCanceledException)
         {
@@ -99,6 +192,7 @@ public sealed class Worker : BackgroundService
         }
         finally
         {
+            _barcodeChannel.Writer.TryComplete();
             _cartManager.WriteCsvReport();
             _logger.LogInformation("Worker terminato");
             _connectionService.Disconnect();
@@ -114,7 +208,7 @@ public sealed class Worker : BackgroundService
         try
         {
             LoadBasketLimits(options, CancellationToken.None);
-           // _cartManager.ResetAll(); DA FARE?
+            // _cartManager.ResetAll(); DA FARE?
         }
         catch (Exception ex)
         {
@@ -137,7 +231,7 @@ public sealed class Worker : BackgroundService
         _basketLimitService.Load(_currentCsvPath, cancellationToken);
     }
 
-    private async Task<bool> HandleSpecialCommandAsync(string input, CancellationToken cancellationToken)
+    private bool HandleSpecialCommandAsync(string input, CancellationToken cancellationToken)
     {
         switch (input.ToLowerInvariant().Trim())
         {
@@ -154,9 +248,7 @@ public sealed class Worker : BackgroundService
                 return true;
 
             case "reset":
-                await HandleResetConsoleMessageAsync(cancellationToken);
-                _cartManager.WriteCsvReport();
-                _cartManager.ResetAll();
+                HandleResetApp(cancellationToken);
                 return true;
 
             case "help":
@@ -194,15 +286,22 @@ public sealed class Worker : BackgroundService
         _logger.LogInformation("{StartupMessage}", message);
     }
 
-    private async Task HandleResetConsoleMessageAsync(CancellationToken cancellationToken)
+    private bool HandleResetApp(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Confermi reset? (s/n):");
 
-        var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
+        //var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
+        var confirmation = Console.ReadLine();
 
         if (confirmation?.ToLowerInvariant() is "s" or "si" or "y" or "yes")
+        {
+            _cartManager.WriteCsvReport();
+            _cartManager.ResetAll();
             _logger.LogInformation("Reset completato");
+            return true;
+        }
         else
             _logger.LogInformation("Reset annullato");
+        return false;
     }
 }

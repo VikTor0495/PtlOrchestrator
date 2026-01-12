@@ -7,51 +7,55 @@ namespace PtlOrchestrator.Builder;
 
 public static class PtlActivationCommandBuilder
 {
-
-   public static PtlActivation BuildGreenActivation(Basket basket)
+    public static PtlActivation BuildPickFlowCommand()
     {
         return new PtlActivation
         {
-            Color = PtlColor.Green,
-            Blinking = true,
-            DisplayText = GetNormalizedDisplayString(
-                basket.CurrentQuantity,
-                basket.MaxQuantity)
+            On = new PtlLightState
+            {
+                Color = PtlColor.Green,
+                Blinking = true,
+                Buzzer = false
+            },
+            AfterConfirm = new PtlLightState
+            {
+                Color = PtlColor.Green,
+                Blinking = false,
+                Buzzer = true
+            }
         };
     }
 
-    public static PtlActivation BuildRedFixedActivation(Basket basket)
+    public static PtlActivation BuildErrorCommand()
     {
         return new PtlActivation
         {
-            Color = PtlColor.Red,
-            Blinking = false,
-            DisplayText = GetNormalizedDisplayString(
-                basket.CurrentQuantity,
-                basket.MaxQuantity)
+            On = new PtlLightState
+            {
+                Color = PtlColor.Red,
+                Blinking = true,
+                Buzzer = false
+            },
+            AfterConfirm = new PtlLightState
+            {
+                Color = PtlColor.Off,
+                Blinking = false,
+                Buzzer = false
+            }
         };
     }
 
-    public static PtlActivation BuildOffActivation()
+    public static PtlActivation BuildOffCommand()
     {
         return new PtlActivation
         {
-            Color = PtlColor.Off,
-            Blinking = false,
-            DisplayText = string.Empty
+            On = new PtlLightState
+            {
+                Color = PtlColor.Off,
+                Blinking = false,
+                Buzzer = false
+            }
         };
     }
 
-    
-    private static string GetNormalizedDisplayString(int currentQuantity, int maxQuantity)
-    {
-        const int DisplayLength = 5;
-
-        var displayText = $"{currentQuantity}/{maxQuantity}";
-
-        if (displayText.Length > DisplayLength)
-            return currentQuantity.ToString();
-
-        return displayText.PadLeft(DisplayLength, ' ');
-    }
 }

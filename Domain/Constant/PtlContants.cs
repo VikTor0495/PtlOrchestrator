@@ -7,6 +7,7 @@ public static class PtlConstants
     public const string SignalLightCtrl = "00";
     public const string LedModePrefix = "m1";
     public const string AfterConfirmPrefix = "m2";
+    public const string AfterFnPrefix = "m3";
     public const int ModuleAddressLength = 4;
     public const int DisplayLength = 5; 
 

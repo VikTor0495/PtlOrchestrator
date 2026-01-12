@@ -66,6 +66,7 @@ builder.Services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();
 builder.Services.AddSingleton<CsvBarcodeLimitReader, CsvBarcodeLimitReader>();
 builder.Services.AddSingleton<IBasketLimitService, BasketLimitService>();
 builder.Services.AddSingleton<IFileReader<BarcodeLimit>, CsvBarcodeLimitReader>();
+builder.Services.AddSingleton<IAppProcessingState, AppProcessingState>();
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

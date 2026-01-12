@@ -22,23 +22,34 @@ public sealed class LightstepPtlCommandService(
 
         var command = Pp505Builder.Build(moduleAddress, activation);
 
-        _logger.LogInformation(
-            "PTL → modulo {Module}, colore {Color}, blink {Blink}, testo '{Text}' => Comando: {Command}",
+        _logger.LogDebug(
+            "PTL → modulo {Module} => Comando: '{Command}'",
             moduleAddress,
-            activation.Color,
-            activation.Blinking,
-            activation.DisplayText ?? string.Empty,
             command);
 
         TryToSendCommand(command);
-
     }
 
-    public async Task WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
+
+    public async Task SendRawAsync(string moduleAddress, string command, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await _connectionService.EnsureConnectedAsync(cancellationToken);
+
+        _logger.LogDebug(
+            "PTL → modulo {Module} => Comando: '{Command}'",
+            moduleAddress,
+            command);
+
+        TryToSendCommand(command);
+    }
+
+    public async Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
     {
         var controller = ConnectAndGetController(cancellationToken);
 
-        _logger.LogInformation("In attesa conferma da modulo {Module}", expectedModule);
+        _logger.LogDebug( "In attesa conferma da modulo {Module}", expectedModule);
 
         while (true)
         {
@@ -48,31 +59,19 @@ public sealed class LightstepPtlCommandService(
 
             if (cmd != null)
             {
-                if (IsConfirmFromModule(cmd, expectedModule))
-                {
-                    return; 
-                }
+                return ExtractSourceModule(cmd) ?? string.Empty;
             }
 
             await Task.Delay(50, cancellationToken);
         }
     }
 
-    private static bool IsConfirmFromModule(CommandInfo cmd, string expectedModule)
+    private static string? ExtractSourceModule(CommandInfo cmd)
     {
         var addresses = AddressInfo.SplitCommand(cmd.GetCommandText());
 
-        foreach (var addr in addresses)
-        {
-            if (addr.Address == expectedModule.ToString())
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return addresses.FirstOrDefault()?.Address;
     }
-
 
     private EthernetController ConnectAndGetController(CancellationToken cancellationToken)
     {
@@ -119,4 +118,5 @@ public sealed class LightstepPtlCommandService(
         if (response == null)
             throw new InvalidOperationException("Risposta NULL dal controller PTL");
     }
+
 }

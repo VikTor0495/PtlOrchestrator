@@ -45,8 +45,8 @@ public sealed class CartContainer(IEnumerable<Cart> carts)
                 {
                     sb.AppendLine(
                         $"  - Basket {basket.BasketId}: " +
-                        $"{basket.CurrentQuantity}/{basket.MaxQuantity} " +
-                        $"[{basket.Barcode}]");
+                        $"[ {basket.Barcode} ] " +
+                        $"{basket.CurrentQuantity}/{basket.MaxQuantity} ");
                 }
             }
 
