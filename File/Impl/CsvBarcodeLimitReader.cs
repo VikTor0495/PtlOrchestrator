@@ -4,25 +4,14 @@ using Microsoft.Extensions.Options;
 
 namespace PtlOrchestrator.File.Impl;
 
-public sealed class CsvBarcodeLimitReader : IFileReader<BarcodeLimit>
+public sealed class CsvBarcodeLimitReader(
+        IOptions<BarcodeLimitOptions> options,
+        ILogger<CsvBarcodeLimitReader> logger) : IFileReader<BarcodeLimit>
 {
 
-    private BarcodeLimitOptions _options;
-    private readonly ILogger<CsvBarcodeLimitReader> _logger;
+    private BarcodeLimitOptions _options = options.Value;
+    private readonly ILogger<CsvBarcodeLimitReader> _logger = logger;
     private readonly object _lock = new();
-
-    public CsvBarcodeLimitReader(
-            IOptionsMonitor<BarcodeLimitOptions> options,
-            ILogger<CsvBarcodeLimitReader> logger)
-    {
-        _logger = logger;
-
-        // valore iniziale
-        _options = options.CurrentValue;
-
-        // hook reload a caldo
-        options.OnChange(OnOptionsChanged);
-    }
 
     public IEnumerable<BarcodeLimit> Read(string filePath)
     {
@@ -71,19 +60,4 @@ public sealed class CsvBarcodeLimitReader : IFileReader<BarcodeLimit>
                 $"File limiti barcode non trovato: {filePath}");
     }
 
-
-    // Gestione aggiornamento a caldo delle opzioni
-    private void OnOptionsChanged(BarcodeLimitOptions newOptions)
-    {
-        lock (_lock)
-        {
-            _options = newOptions;
-
-            _logger.LogInformation(
-                "BarcodeLimitOptions aggiornate a caldo: File={FilePath}, BarcodeCol={BarcodeCol}, LimitCol={LimitCol}",
-                newOptions.FileName,
-                newOptions.BarcodeColumnIndex,
-                newOptions.LimitColumnIndex);
-        }
-    }
 }

@@ -7,7 +7,7 @@ public interface ICartManager
 {
     CartAssignmentResult ProcessBarcode(string barcode, CancellationToken cancellationToken);
 
-    void ResetAll();
+    void ResetAll(CancellationToken cancellationToken);
 
     void ShowStatus();
     

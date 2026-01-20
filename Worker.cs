@@ -8,19 +8,28 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace PtlOrchestrator;
 
-public sealed class Worker : BackgroundService
+public sealed class Worker(
+    ICartManager cartManager,
+    IBarcodeInputService barcodeInput,
+    IHostApplicationLifetime appLifetime,
+    ILightstepConnectionService lightstepConnectionService,
+    IBasketLimitService basketLimitService,
+    IOptions<BarcodeLimitOptions> optionsMonitor,
+    IAppProcessingState appProcessingState,
+    ILogger<Worker> logger) : BackgroundService
 {
-    private readonly ICartManager _cartManager;
-    private readonly IBarcodeInputService _barcodeInput;
-    private readonly IHostApplicationLifetime _appLifetime;
-    private readonly ILightstepConnectionService _connectionService;
-    private readonly IBasketLimitService _basketLimitService;
-    private readonly IOptionsMonitor<BarcodeLimitOptions> _optionsMonitor;
-    private readonly IAppProcessingState _appProcessingState;
-    private readonly ILogger<Worker> _logger;
+    private readonly ICartManager _cartManager = cartManager;
+    private readonly IBarcodeInputService _barcodeInput = barcodeInput;
+    private readonly IHostApplicationLifetime _appLifetime = appLifetime;
+    private readonly ILightstepConnectionService _connectionService = lightstepConnectionService;
+    private readonly IBasketLimitService _basketLimitService = basketLimitService;
+    private readonly IOptions<BarcodeLimitOptions> _optionsMonitor = optionsMonitor;
+    private readonly IAppProcessingState _appProcessingState = appProcessingState;
+    private readonly ILogger<Worker> _logger = logger;
     private int firstBarcode = 0;
 
     private string _currentCsvPath = string.Empty;
@@ -29,33 +38,9 @@ public sealed class Worker : BackgroundService
         Channel.CreateBounded<string>(new BoundedChannelOptions(1)
         {
             FullMode = BoundedChannelFullMode.DropWrite
-            // oppure Wait se vuoi bloccare l'input
         });
 
-    public Worker(
-        ICartManager cartManager,
-        IBarcodeInputService barcodeInput,
-        IHostApplicationLifetime appLifetime,
-        ILightstepConnectionService lightstepConnectionService,
-        IBasketLimitService basketLimitService,
-        IOptionsMonitor<BarcodeLimitOptions> optionsMonitor,
-        IAppProcessingState appProcessingState,
-        ILogger<Worker> logger)
-    {
-        _cartManager = cartManager;
-        _barcodeInput = barcodeInput;
-        _appLifetime = appLifetime;
-        _connectionService = lightstepConnectionService;
-        _basketLimitService = basketLimitService;
-        _optionsMonitor = optionsMonitor;
-        _logger = logger;
-        _appProcessingState = appProcessingState;
-
-        // 🔁 Hook reload a caldo
-        _optionsMonitor.OnChange(OnBarcodeLimitOptionsChanged);
-    }
-
-    private void ReadInputLoop(CancellationToken ct)
+    private async Task ReadInputLoop(CancellationToken ct)
     {
         try
         {
@@ -85,7 +70,7 @@ public sealed class Worker : BackgroundService
                 }
 
                 // comandi fuori dal channel
-                if (HandleSpecialCommandAsync(input, ct))
+                if (await HandleSpecialCommandAsync(input, ct))
                 {
                     _logger.LogInformation("Barcode >");
                     continue;
@@ -140,42 +125,11 @@ public sealed class Worker : BackgroundService
 
             await _connectionService.EnsureConnectedAsync(cancellationToken);
 
-            LoadBasketLimits(_optionsMonitor.CurrentValue, cancellationToken);
+            LoadBasketLimits(_optionsMonitor.Value, cancellationToken);
 
-            _cartManager.ResetAll();
+            _cartManager.ResetAll(cancellationToken);
+
             ShowStartupLogs();
-
-            /* while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-
-                    var input = await _barcodeInput.ReadInputAsync(cancellationToken);
-
-                    if (string.IsNullOrWhiteSpace(input) || await HandleSpecialCommandAsync(input, cancellationToken))
-                        continue;
-
-                    var result = _cartManager.ProcessBarcode(input, cancellationToken);
-
-                    if (!result.Success)
-                    {
-                        _logger.LogWarning(
-                            "RIFIUTATO barcode {Barcode}: {Reason}",
-                            input,
-                            result.Reason);
-                    }
-
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Errore durante elaborazione barcode");
-                }
-            } */
-
 
             var inputTask = Task.Run(() => ReadInputLoop(cancellationToken), cancellationToken);
             var processTask = Task.Run(() => ProcessLoop(cancellationToken), cancellationToken);
@@ -200,22 +154,6 @@ public sealed class Worker : BackgroundService
     }
 
 
-    private void OnBarcodeLimitOptionsChanged(BarcodeLimitOptions options)
-    {
-        _logger.LogInformation(
-            "LimitBarcode modificate. Ricarico file limiti...");
-
-        try
-        {
-            LoadBasketLimits(options, CancellationToken.None);
-            // _cartManager.ResetAll(); DA FARE?
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante reload limiti barcode");
-        }
-    }
-
     private void LoadBasketLimits(
         BarcodeLimitOptions options,
         CancellationToken cancellationToken)
@@ -224,14 +162,10 @@ public sealed class Worker : BackgroundService
             AppContext.BaseDirectory,
             options.FileName);
 
-        _logger.LogInformation(
-            "Caricamento limiti basket da {CsvPath}",
-            _currentCsvPath);
-
         _basketLimitService.Load(_currentCsvPath, cancellationToken);
     }
 
-    private bool HandleSpecialCommandAsync(string input, CancellationToken cancellationToken)
+    private async Task<bool> HandleSpecialCommandAsync(string input, CancellationToken cancellationToken)
     {
         switch (input.ToLowerInvariant().Trim())
         {
@@ -239,6 +173,8 @@ public sealed class Worker : BackgroundService
             case "quit":
             case "q":
                 _logger.LogInformation("Richiesta terminazione applicazione...");
+                _cartManager.WriteCsvReport();
+                _connectionService.Disconnect();
                 _appLifetime.StopApplication();
                 return true;
 
@@ -248,7 +184,7 @@ public sealed class Worker : BackgroundService
                 return true;
 
             case "reset":
-                HandleResetApp(cancellationToken);
+                await HandleResetApp(cancellationToken);
                 return true;
 
             case "help":
@@ -267,7 +203,7 @@ public sealed class Worker : BackgroundService
         [
             "",
             "╔═══════════════════════════════════════════════╗",
-            "║   BARCODE CART MANAGER - WORKER SERVICE       ║",
+            "║           PUT-TO-LIGHT ORCHESTRATOR           ║",
             "╚═══════════════════════════════════════════════╝",
             "",
             "Sistema inizializzato correttamente",
@@ -286,17 +222,20 @@ public sealed class Worker : BackgroundService
         _logger.LogInformation("{StartupMessage}", message);
     }
 
-    private bool HandleResetApp(CancellationToken cancellationToken)
+    private async Task<bool> HandleResetApp(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Confermi reset? (s/n):");
 
-        //var confirmation = await _barcodeInput.ReadInputAsync(cancellationToken);
         var confirmation = Console.ReadLine();
 
         if (confirmation?.ToLowerInvariant() is "s" or "si" or "y" or "yes")
         {
             _cartManager.WriteCsvReport();
-            _cartManager.ResetAll();
+
+            _connectionService.Disconnect();
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
+
+            _cartManager.ResetAll(cancellationToken);
             _logger.LogInformation("Reset completato");
             return true;
         }

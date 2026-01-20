@@ -1,7 +1,7 @@
 namespace PtlOrchestrator.Domain;
-public sealed class Cart(int cartId, IEnumerable<Basket> baskets)
+public sealed class Cart(string cartId, IEnumerable<Basket> baskets)
 {
-    public int CartId { get; } = cartId;
+    public string CartId { get; } = cartId;
     private readonly List<Basket> _baskets = [.. baskets];
 
     public IReadOnlyCollection<Basket> GetBaskets => _baskets;

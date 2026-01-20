@@ -8,33 +8,10 @@ namespace PtlOrchestrator.Builder;
 
 public static class Pp505Builder
 {
-    /*  public static string Build(
-         string moduleAddress,
-         PtlActivation activation)
-     {
-         Validate(moduleAddress);
 
-         return activation.Color == PtlColor.Off
-                 ? PtlConstants.TurnOffCommandPrefix + moduleAddress : string.Concat(
-         PtlConstants.Command,
-         PtlConstants.FnDataAfterKey,
-         PtlConstants.SignalLightCtrl,
-         PtlConstants.LedModePrefix,
-         BuildLedCode(activation),
-         PtlConstants.AfterConfirmPrefix,
-         "1\u0011!", // Led always OFF, display ON
-         moduleAddress,
-         GetBlankDisplay()
-         );
-     }
-  */
-    public static string Build(string moduleAddress, PtlActivation activation)
-
+    public static string BuildFlashGreenCommandThenOff(string moduleAddress)
     {
         Validate(moduleAddress);
-
-        if (activation.On.Color == PtlColor.Off)
-            return PtlConstants.TurnOffCommandPrefix + moduleAddress;
 
         var sb = new StringBuilder();
 
@@ -42,23 +19,66 @@ public static class Pp505Builder
         sb.Append(PtlConstants.FnDataAfterKey);
         sb.Append(PtlConstants.SignalLightCtrl);
 
-        // m1 – stato iniziale
+        // m1 – stato iniziale: verde lampeggiante
         sb.Append(PtlConstants.LedModePrefix);
-        sb.Append(BuildLedCode(activation.On));
+        sb.Append("11#"); // verde lampeggiante
+        //sb.Append('\u0011'); // DC1
 
-        // m2 – after confirm
-        if (activation.AfterConfirm != null)
-        {
-            sb.Append(PtlConstants.AfterConfirmPrefix);
-            sb.Append(BuildLedCodeAfterConfirm(activation.AfterConfirm));
-        }
+        // m2 – after confirm: verde fisso
+        sb.Append(PtlConstants.AfterConfirmPrefix);
+        sb.Append("1!"); // verde fisso
+        sb.Append('\u0012'); // DC2
 
-        // m3 – after FN
-        /*   if (activation.AfterFn != null)
-          {
-              sb.Append(PtlConstants.AfterFnPrefix);
-              sb.Append(BuildLedCode(activation.AfterFn));
-          } */
+        sb.Append(moduleAddress);
+
+        sb.Append(GetBlankDisplay());
+
+        return sb.ToString();
+    }
+
+    public static string BuildGreenCommand(string moduleAddress)
+    {
+        Validate(moduleAddress);
+
+        var sb = new StringBuilder();
+
+        sb.Append(PtlConstants.Command);
+        sb.Append(PtlConstants.FnDataAfterKey);
+        sb.Append(PtlConstants.SignalLightCtrl);
+
+        // LED verde fisso
+        sb.Append(PtlConstants.LedModePrefix);
+        sb.Append("1!"); // verde fisso
+        sb.Append('\u0011'); // DC1
+
+        sb.Append(moduleAddress);
+
+        sb.Append(GetBlankDisplay());
+
+        return sb.ToString();
+    }
+
+    public static string BuildFlashRedCommandThenOff(string moduleAddress)
+    {
+        Validate(moduleAddress);
+
+        var sb = new StringBuilder();
+
+        sb.Append(PtlConstants.Command);
+        sb.Append(PtlConstants.FnDataAfterKey);
+        sb.Append(PtlConstants.SignalLightCtrl);
+
+        // m1 – stato iniziale: rosso lampeggiante
+        sb.Append(PtlConstants.LedModePrefix);
+        sb.Append('3');
+        sb.Append('\u0011');
+        sb.Append('\u0011');
+
+        // m2 – after confirm: spento
+        sb.Append(PtlConstants.AfterConfirmPrefix);
+        sb.Append('1');
+        sb.Append('\u0011');
+        sb.Append('\u0011');
 
         sb.Append(moduleAddress);
 
@@ -83,46 +103,15 @@ public static class Pp505Builder
         );
     }
 
+    public static string BuildOffCommand(string moduleAddress)
+    {
+        return PtlConstants.TurnOffCommandPrefix + moduleAddress;
+    }
+
 
     private static string GetBlankDisplay()
     {
         return new string(' ', PtlConstants.DisplayLength);
-    }
-
-    private static string BuildLedCode(PtlLightState ptlLightState)
-    {
-        return (ptlLightState.Color, ptlLightState.Blinking) switch
-        {
-            // GREEN
-            (PtlColor.Green, false) => "1!",
-            (PtlColor.Green, true) => "11#",
-
-            // RED
-            (PtlColor.Red, true) => "3\u0011!",
-            (PtlColor.Red, false) => "2\u0011!",
-
-
-            // OFF / fallback
-            (PtlColor.Off, _) => string.Empty,
-
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(ptlLightState),
-                $"Combinazione LED non supportata: {ptlLightState.Color} / blink={ptlLightState.Blinking}")
-        };
-    }
-
-    private static string BuildLedCodeAfterConfirm(PtlLightState state)
-    {
-        var led = state.Color switch
-        {
-            PtlColor.Green => state.Blinking ? "11!" : "1!",
-            PtlColor.Red => state.Blinking ? "3!" : "2!",
-            PtlColor.Off => "1!",
-            _ => throw new ArgumentOutOfRangeException(nameof(state))
-        };
-
-        // DC2 = fine m2 + buzzer
-        return led + "\u0012";
     }
 
     private static void Validate(

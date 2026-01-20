@@ -48,9 +48,9 @@ public sealed class CsvCartReportWriter(
                     continue;
                     
                 writer.WriteLine(
-                    $"{cart.CartId};" +
-                    $"{basket.BasketId};" +
-                    $"{basket.Barcode};" +
+                    $"{cart.CartId}," +
+                    $"{basket.BasketId}," +
+                    $"{basket.Barcode}," +
                     $"{basket.CurrentQuantity}");
             }
         }

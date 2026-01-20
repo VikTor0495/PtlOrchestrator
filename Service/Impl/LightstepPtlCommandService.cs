@@ -14,22 +14,6 @@ public sealed class LightstepPtlCommandService(
     private readonly ILightstepConnectionService _connectionService = connectionService;
     private readonly ILogger<LightstepPtlCommandService> _logger = logger;
 
-    public async Task SendAsync(string moduleAddress, PtlActivation activation, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        await _connectionService.EnsureConnectedAsync(cancellationToken);
-
-        var command = Pp505Builder.Build(moduleAddress, activation);
-
-        _logger.LogDebug(
-            "PTL → modulo {Module} => Comando: '{Command}'",
-            moduleAddress,
-            command);
-
-        TryToSendCommand(command);
-    }
-
 
     public async Task SendRawAsync(string moduleAddress, string command, CancellationToken cancellationToken)
     {

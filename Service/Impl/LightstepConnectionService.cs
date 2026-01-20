@@ -21,6 +21,7 @@ public sealed class LightstepConnectionService(
 
     public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Entrato in EnsureConnectedAsync");
         if (IsConnected)
             return;
 
@@ -64,6 +65,7 @@ public sealed class LightstepConnectionService(
 
     public EthernetController GetController()
     {
+        _logger.LogDebug("Entrato in GetController");
         if (!IsConnected || _controller == null)
             throw new InvalidOperationException(
                 "Controller PTL non connesso");
@@ -73,6 +75,9 @@ public sealed class LightstepConnectionService(
 
     public void Disconnect()
     {
+
+        _logger.LogDebug("Entrato in Disconnect");
+        
         var controller = _controller;
         if (controller == null)
             return;
@@ -81,7 +86,7 @@ public sealed class LightstepConnectionService(
 
         _controller = null;
 
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             try
             {

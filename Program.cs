@@ -17,11 +17,6 @@ using Microsoft.Extensions.Options;
 var builder = Host.CreateApplicationBuilder(args);
 
 // Registra configurazioni tipizzate
-builder.Configuration.AddJsonFile(
-    "appsettings.json",
-    optional: false,
-    reloadOnChange: true); // reload a caldo
-
 builder.Services
     .AddOptions<LightstepOptions>()
     .Bind(builder.Configuration.GetSection("Lightstep"))
@@ -57,6 +52,9 @@ builder.Services
     .Validate(o => !string.IsNullOrWhiteSpace(o.FileName), "FileName non valido")
     .ValidateOnStart();
 
+builder.Services.Configure<TimeoutOptions>(
+    builder.Configuration.GetSection("ProcessTimeout"));
+
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
 builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
@@ -78,7 +76,7 @@ builder.Logging.AddConsole(options =>
 {
     options.FormatterName = "custom";
 });
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
