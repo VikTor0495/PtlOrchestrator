@@ -6,4 +6,5 @@ public sealed class LightstepOptions
     public string ControllerIp { get; init; } = string.Empty;
     public int ControllerPort { get; init; }
     public int ConnectionTimeout { get; init; }
+    public int MaxParallelSends { get; init; } = 1;
 }

@@ -98,7 +98,7 @@ public sealed class Worker(
                 if (!_appProcessingState.TryEnter())
                     continue;
 
-                var result = _cartManager.ProcessBarcode(barcode, ct);
+                var result = await _cartManager.ProcessBarcode(barcode, ct);
 
                 if (!result.Success)
                 {
@@ -127,7 +127,7 @@ public sealed class Worker(
 
             LoadBasketLimits(_optionsMonitor.Value, cancellationToken);
 
-            _cartManager.ResetAll(cancellationToken);
+            await _cartManager.ResetAll(cancellationToken);
 
             ShowStartupLogs();
 
@@ -148,6 +148,7 @@ public sealed class Worker(
         {
             _barcodeChannel.Writer.TryComplete();
             _cartManager.WriteCsvReport();
+            await _cartManager.ResetAll(cancellationToken);
             _logger.LogInformation("Worker terminato");
             _connectionService.Disconnect();
         }
@@ -235,7 +236,7 @@ public sealed class Worker(
             _connectionService.Disconnect();
             await _connectionService.EnsureConnectedAsync(cancellationToken);
 
-            _cartManager.ResetAll(cancellationToken);
+            await _cartManager.ResetAll(cancellationToken);
             _logger.LogInformation("Reset completato");
             return true;
         }

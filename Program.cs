@@ -76,7 +76,7 @@ builder.Logging.AddConsole(options =>
 {
     options.FormatterName = "custom";
 });
-builder.Logging.SetMinimumLevel(LogLevel.Debug);
+builder.Logging.SetMinimumLevel(LogLevel.Information);
 builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
