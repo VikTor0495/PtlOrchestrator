@@ -1,8 +1,6 @@
 ﻿using PtlOrchestrator;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Service.Impl;
-using PtlOrchestrator.Input;
-using PtlOrchestrator.Input.Impl;
 using PtlOrchestrator.Manager;
 using PtlOrchestrator.Manager.Impl;
 using PtlOrchestrator.Configuration;
@@ -57,7 +55,6 @@ builder.Services.Configure<TimeoutOptions>(
 
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
-builder.Services.AddSingleton<IBarcodeInputService, ConsoleBarcodeInputService>();
 builder.Services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
 builder.Services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
 builder.Services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();
@@ -76,7 +73,7 @@ builder.Logging.AddConsole(options =>
 {
     options.FormatterName = "custom";
 });
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.None);
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);

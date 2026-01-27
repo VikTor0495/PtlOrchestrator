@@ -34,6 +34,9 @@ public sealed class CustomLogFormatter : ConsoleFormatter
 
         const string reset = "\x1b[0m";
 
-        textWriter.WriteLine($"{color}{levelText}{reset} {message}");
+        var timestamp = DateTimeOffset.Now.ToString("HH:mm:ss.fff");
+        const string timeColor = "\x1b[90m"; // gray
+
+        textWriter.WriteLine($"{timeColor}{timestamp}{reset} {color}{levelText}{reset} {message}");
     }
 }

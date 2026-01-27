@@ -1,4 +1,5 @@
 using AioiSystems.Lightstep;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using PtlOrchestrator.Domain;
 using PtlOrchestrator.Service;
@@ -19,21 +20,26 @@ public sealed class LightstepPtlCommandService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _connectionService.EnsureConnectedAsync(cancellationToken);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-        _logger.LogDebug(
-            "PTL → modulo {Module} => Comando: '{Command}'",
-            moduleAddress,
-            command);
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
 
-        TryToSendCommand(command);
+            _logger.LogDebug(
+                "PTL → modulo {Module} => Comando: '{Command}'",
+                moduleAddress,
+                command);
+
+            TryToSendCommand(command);
+        }
     }
 
     public async Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
     {
         var controller = ConnectAndGetController(cancellationToken);
 
-        _logger.LogDebug( "In attesa conferma da modulo {Module}", expectedModule);
+        _logger.LogDebug("In attesa conferma da modulo {Module}", expectedModule);
 
         while (true)
         {
@@ -66,16 +72,16 @@ public sealed class LightstepPtlCommandService(
         return _connectionService.GetController();
     }
 
-    private void TryToSendCommand(string command)
+     private void TryToSendCommand(string command)
     {
         var controller = _connectionService.GetController();
 
         CommandInfo response;
 
+        var sendSw = Stopwatch.StartNew();
         try
         {
             response = controller.SendCommand(command);
-
         }
         catch (NakReceivedException ex)
         {
@@ -95,6 +101,7 @@ public sealed class LightstepPtlCommandService(
         }
 
         ValidateResponse(response);
+
     }
 
     private static void ValidateResponse(CommandInfo response)

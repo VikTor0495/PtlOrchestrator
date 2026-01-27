@@ -35,10 +35,8 @@ public sealed class CartManager(
     private readonly ILogger<CartManager> _logger = logger;
 
 
-
     public async Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in ProcessBarcode: {Barcode}", barcode);
 
         CartAssignmentResult result;
 
@@ -71,7 +69,7 @@ public sealed class CartManager(
         }
         catch (OperationCanceledException)
         {
-            await ResetAllBaskets(false, cancellationToken);
+            await ResetAllBaskets(false, null, cancellationToken);
             Rollback(result);
             return CartAssignmentResult.Rejected($"Timeout raggiunto durante il processo di inserimento Carrello {result.Cart!.CartId}, Basket {result.Basket!.BasketId}");
         }
@@ -104,17 +102,21 @@ public sealed class CartManager(
 
         if (result != null && result.Basket != null)
         {
-            HandlePickLightFlow(result.Basket.BasketId, cancellationToken);
-            HandleOperatorConfirmationFlow(result.Basket.BasketId, cancellationToken);
+            await HandlePickLightFlow(result.Basket.BasketId, cancellationToken);
+            await HandleOperatorConfirmationFlow(result.Basket.BasketId, cancellationToken);
 
             _logger.LogInformation(
                 "Conferma ricevuta per Cart {CartId}, Basket {BasketId}",
                 result.Cart!.CartId,
                 result.Basket.BasketId);
 
+            
             await Task.Delay(1000, cancellationToken);
+            await _ptlCommandService.SendRawAsync(result.Basket.BasketId,
+                       Pp505Builder.BuildOffCommand(result.Basket.BasketId), cancellationToken
+                  );
 
-            await ResetAllBaskets(false, cancellationToken); ;
+           // await ResetAllBaskets(false, result.Basket.BasketId, cancellationToken);
         }
         else
         {
@@ -122,31 +124,25 @@ public sealed class CartManager(
         }
     }
 
-    private void HandlePickLightFlow(string basketId, CancellationToken cancellationToken)
+    private async Task HandlePickLightFlow(string basketId, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in HandlePickLightFlow per Basket {BasketId}", basketId);
 
-        _ptlCommandService.SendRawAsync(basketId,
+        await _ptlCommandService.SendRawAsync(basketId,
                                       Pp505Builder.BuildFlashGreenCommandThenOff(basketId), cancellationToken);
 
         ActiveAllModulesForPicking(basketId, cancellationToken);
     }
 
 
-    private void HandleOperatorConfirmationFlow(string basketId, CancellationToken cancellationToken)
+    private async Task HandleOperatorConfirmationFlow(string basketId, CancellationToken cancellationToken)
     {
-        _logger.LogDebug(
-            "Entrato in HandleOperatorConfirmationFlow per Basket {BasketId}",
-            basketId);
 
         string? lastWrongBasketId = null;
 
         while (true)
         {
-            var confirmedModule = _ptlCommandService
-                .WaitForButtonAsync(basketId, cancellationToken)
-                .GetAwaiter()
-                .GetResult();
+            var confirmedModule = await _ptlCommandService
+                .WaitForButtonAsync(basketId, cancellationToken);
 
             // CONFERMA CORRETTA
             if (confirmedModule == basketId)
@@ -157,7 +153,7 @@ public sealed class CartManager(
 
                 if (lastWrongBasketId != null && lastWrongBasketId != basketId)
                 {
-                    _ptlCommandService.SendRawAsync(
+                    await _ptlCommandService.SendRawAsync(
                         lastWrongBasketId,
                         Pp505Builder.BuildArmedNoLight(lastWrongBasketId),
                         cancellationToken
@@ -174,11 +170,12 @@ public sealed class CartManager(
 
             if (confirmedModule == lastWrongBasketId)
             {
-                _ptlCommandService.SendRawAsync(
+                await _ptlCommandService.SendRawAsync(
                     confirmedModule,
                     Pp505Builder.BuildArmedNoLight(confirmedModule),
                     cancellationToken
                 );
+                lastWrongBasketId = null;
 
                 continue;
             }
@@ -186,7 +183,7 @@ public sealed class CartManager(
             // spegni il rosso precedente (se esiste)
             if (lastWrongBasketId != null && lastWrongBasketId != basketId)
             {
-                _ptlCommandService.SendRawAsync(
+                await _ptlCommandService.SendRawAsync(
                     lastWrongBasketId,
                     Pp505Builder.BuildArmedNoLight(lastWrongBasketId),
                     cancellationToken
@@ -194,7 +191,7 @@ public sealed class CartManager(
             }
 
             // accendi rosso fisso + beep sul nuovo basket errato
-            _ptlCommandService.SendRawAsync(
+            await _ptlCommandService.SendRawAsync(
                 confirmedModule,
                 Pp505Builder.BuildRedBuzzer(confirmedModule),
                 cancellationToken
@@ -207,7 +204,6 @@ public sealed class CartManager(
 
     private void ActiveAllModulesForPicking(string excludingBasketId, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in ArmsOtherBaskets, escludendo Basket {ExcludingBasketId}", excludingBasketId);
 
         var basketsToArm = _cartContainer.GetCarts()
             .SelectMany(c => c.GetBaskets)
@@ -230,7 +226,6 @@ public sealed class CartManager(
 
     private void TurnOffOtherBasketsAsync(string[] excludingBasketId, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in TurnOffOtherBaskets, escludendo Basket {ExcludingBasketId}", excludingBasketId);
 
         var basketsToOff = _cartContainer.GetCarts()
             .SelectMany(c => c.GetBaskets)
@@ -255,18 +250,16 @@ public sealed class CartManager(
 
     public async Task ResetAll(CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in ResetAll");
 
-        await ResetAllBaskets(true, cancellationToken);
+        await ResetAllBaskets(true, null,  cancellationToken);
 
         _cartContainer.ResetAll();
 
         _logger.LogInformation("Reset completo di tutti i carrelli");
     }
 
-    private async Task ResetAllBaskets(bool greenLightFirst, CancellationToken cancellationToken)
+    private async Task ResetAllBaskets(bool greenLightFirst, string? basketAvoidReset,CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in ResetAllBaskets");
 
         var baskets = _cartContainer.GetCarts().SelectMany(c => c.GetBaskets).ToList();
 
@@ -277,12 +270,11 @@ public sealed class CartManager(
             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
 
-        SendOffCommandToBaskets(baskets, cancellationToken);
+        SendOffCommandToBaskets(basketAvoidReset != null ? [.. baskets.Where(b => b.BasketId != basketAvoidReset)] : baskets, cancellationToken);
     }
 
     private void SendGreenCommandToBaskets(IReadOnlyCollection<Basket> baskets, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in SendGreenCommandToBaskets");
         foreach (var basket in baskets)
         {
             TryToSendGreenCommand(basket.BasketId, cancellationToken);
@@ -293,7 +285,6 @@ public sealed class CartManager(
 
     private void SendOffCommandToBaskets(IReadOnlyCollection<Basket> baskets, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in SendOffCommandToBaskets");
         foreach (var basket in baskets)
         {
             TryToResetBasket(basket.BasketId, cancellationToken);
@@ -308,7 +299,6 @@ public sealed class CartManager(
 
     private void Rollback(CartAssignmentResult assignment)
     {
-        _logger.LogDebug("Entrato in Rollback");
         _cartContainer.Rollback(assignment);
     }
 
@@ -317,13 +307,11 @@ public sealed class CartManager(
     {
         try
         {
-            _logger.LogDebug("Entrato in TryToResetBasket per Basket {BasketId}", basketId);
 
             _ptlCommandService.SendRawAsync(
                 basketId,
                 Pp505Builder.BuildOffCommand(basketId),
-                cancellationToken
-            ).GetAwaiter().GetResult();
+                cancellationToken);
 
         }
         catch (Exception ex)
@@ -335,13 +323,11 @@ public sealed class CartManager(
     {
         try
         {
-            _logger.LogDebug("Entrato in TryToSendGreenCommand per Basket {BasketId}", basketId);
-
             _ptlCommandService.SendRawAsync(
                 basketId,
                 Pp505Builder.BuildGreenCommand(basketId),
                 cancellationToken
-            ).GetAwaiter().GetResult();
+            );
 
         }
         catch (Exception ex)
@@ -352,8 +338,6 @@ public sealed class CartManager(
 
     public void WriteCsvReport()
     {
-        _logger.LogDebug("Entrato in WriteCsvReport");
-
         try
         {
             _cartReportWriter.Write(_cartContainer.GetCarts());

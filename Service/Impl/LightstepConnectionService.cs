@@ -12,16 +12,13 @@ public sealed class LightstepConnectionService(
 {
     private readonly LightstepOptions _options = options.Value;
     private readonly ILogger<LightstepConnectionService> _logger = logger;
-    /* 
-        private readonly object _sync = new(); */
-
     private EthernetController? _controller;
 
     public bool IsConnected => _controller?.IsConnected == true;
 
     public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Entrato in EnsureConnectedAsync");
+    
         if (IsConnected)
             return;
 
@@ -65,7 +62,6 @@ public sealed class LightstepConnectionService(
 
     public EthernetController GetController()
     {
-        _logger.LogDebug("Entrato in GetController");
         if (!IsConnected || _controller == null)
             throw new InvalidOperationException(
                 "Controller PTL non connesso");
@@ -76,8 +72,6 @@ public sealed class LightstepConnectionService(
     public void Disconnect()
     {
 
-        _logger.LogDebug("Entrato in Disconnect");
-        
         var controller = _controller;
         if (controller == null)
             return;

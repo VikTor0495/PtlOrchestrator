@@ -1,20 +1,15 @@
 using PtlOrchestrator.Service;
-using PtlOrchestrator.Input;
-using PtlOrchestrator.Domain;
 using PtlOrchestrator.Manager;
 using PtlOrchestrator.Configuration;
 
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Threading.Channels;
-using System.Threading.Tasks;
+
 
 namespace PtlOrchestrator;
 
 public sealed class Worker(
     ICartManager cartManager,
-    IBarcodeInputService barcodeInput,
     IHostApplicationLifetime appLifetime,
     ILightstepConnectionService lightstepConnectionService,
     IBasketLimitService basketLimitService,
@@ -23,7 +18,6 @@ public sealed class Worker(
     ILogger<Worker> logger) : BackgroundService
 {
     private readonly ICartManager _cartManager = cartManager;
-    private readonly IBarcodeInputService _barcodeInput = barcodeInput;
     private readonly IHostApplicationLifetime _appLifetime = appLifetime;
     private readonly ILightstepConnectionService _connectionService = lightstepConnectionService;
     private readonly IBasketLimitService _basketLimitService = basketLimitService;
@@ -202,6 +196,7 @@ public sealed class Worker(
     {
         var message = string.Join(Environment.NewLine,
         [
+            new string('-', 50),
             "",
             "╔═══════════════════════════════════════════════╗",
             "║           PUT-TO-LIGHT ORCHESTRATOR           ║",
@@ -214,8 +209,6 @@ public sealed class Worker(
             "- 'status'      - Mostra stato carrelli",
             "- 'reset'       - Reset di tutti i carrelli (Genera report)",
             "- 'exit/quit'   - Esci dal programma (Genera report)",
-            "",
-            "Pronto per ricevere input!",
             "",
             new string('─', 50)
         ]);
