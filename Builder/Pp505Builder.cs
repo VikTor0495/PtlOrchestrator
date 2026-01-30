@@ -19,7 +19,7 @@ public static class Pp505Builder
     private const string BlankDisplay = "     ";
 
 
-    public static string BuildFlashGreenCommandThenOff(string moduleAddress)
+    public static string BuildFlashGreenCommandThenFix(string moduleAddress)
     {
         return "PP5050000m111m21!" + moduleAddress + BlankDisplay;
     }
@@ -42,6 +42,12 @@ public static class Pp505Builder
         sb.Append(BlankDisplay);
 
         return sb.ToString();
+    }
+
+    public static string BuildGreenCommand(string[] moduleAddress)
+    {
+
+        return "PP5050000m11!" + BuildMultiModuleString(moduleAddress) + BlankDisplay; 
     }
 
     public static string BuildFlashRedCommandThenOff(string moduleAddress)
@@ -76,23 +82,13 @@ public static class Pp505Builder
         return "PP5050000m12m21" + moduleAddress + BlankDisplay;
     }
 
-    public static string BuildArmedNoLight(string moduleAddress)
+    public static string BuildArmedNoLight(string[] moduleAddress)
     {
-        return string.Concat(
-            Command,
-            FnDataAfterKey,
-            SignalLightCtrl,
-            "m1",
-            "1\u0011",    // LED OFF + DC1
-            "\u0011",     // sensori attivi, nessuna luce
-            moduleAddress,
-            BlankDisplay
-        );
+        return "PP5050000m11" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
     }
 
     public static string BuildArmedNoLightThenBlinkRed(string moduleAddress)
     {
-        //return "PP5050000m11m23" + moduleAddress + BlankDisplay;
         return "PP5050000m11m23m31" + moduleAddress + BlankDisplay;
     }
 
@@ -100,6 +96,11 @@ public static class Pp505Builder
     public static string BuildOffCommand(string moduleAddress)
     {
         return TurnOffCommandPrefix + moduleAddress;
+    }
+
+    private static string BuildMultiModuleString(string[] moduleAddress)
+    {
+        return string.Join(BlankDisplay, moduleAddress);
     }
 
 }

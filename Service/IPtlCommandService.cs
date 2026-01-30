@@ -6,7 +6,7 @@ namespace PtlOrchestrator.Service;
 
 public interface IPtlCommandService
 {
-    Task SendRawAsync(string moduleAddress, string command, CancellationToken cancellationToken);
+    Task SendRawAsync(string[] moduleAddress, string command, CancellationToken cancellationToken);
 
     Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken);
 }

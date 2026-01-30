@@ -16,23 +16,18 @@ public sealed class LightstepPtlCommandService(
     private readonly ILogger<LightstepPtlCommandService> _logger = logger;
 
 
-    public async Task SendRawAsync(string moduleAddress, string command, CancellationToken cancellationToken)
+    public async Task SendRawAsync(string[] moduleAddress, string command, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_logger.IsEnabled(LogLevel.Debug))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+        await _connectionService.EnsureConnectedAsync(cancellationToken);
 
-            await _connectionService.EnsureConnectedAsync(cancellationToken);
+        _logger.LogDebug(
+            "Invio comando -> '{Command}'",
+            command);
 
-            _logger.LogDebug(
-                "PTL → modulo {Module} => Comando: '{Command}'",
-                moduleAddress,
-                command);
+        TryToSendCommand(command);
 
-            TryToSendCommand(command);
-        }
     }
 
     public async Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
@@ -67,12 +62,12 @@ public sealed class LightstepPtlCommandService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        _connectionService.EnsureConnectedAsync(cancellationToken).GetAwaiter().GetResult();
+        _connectionService.EnsureConnectedAsync(cancellationToken);
 
         return _connectionService.GetController();
     }
 
-     private void TryToSendCommand(string command)
+    private void TryToSendCommand(string command)
     {
         var controller = _connectionService.GetController();
 
