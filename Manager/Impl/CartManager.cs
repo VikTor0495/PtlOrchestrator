@@ -103,7 +103,7 @@ public sealed class CartManager(
         if (result != null && result.Basket != null)
         {
             await HandlePickLightFlow(result.Basket.BasketId, cancellationToken);
-            
+
 
             _logger.LogInformation(
                 "Conferma ricevuta per Cart {CartId}, Basket {BasketId}",
@@ -111,9 +111,9 @@ public sealed class CartManager(
                 result.Basket.BasketId);
 
 
-            await Task.Delay(1000, cancellationToken);
-            await _ptlCommandService.SendRawAsync([result.Basket.BasketId],
-                       Pp505Builder.BuildArmedNoLight([result.Basket.BasketId]), cancellationToken
+            await Task.Delay(600, cancellationToken);
+            await _ptlCommandService.SendRawAsync(
+                       Pp505Builder.BuildArmedNoLightButtonDisabled(GetBasketIdsEnumerable()), cancellationToken
                   );
 
         }
@@ -125,9 +125,13 @@ public sealed class CartManager(
 
     private async Task HandlePickLightFlow(string basketId, CancellationToken cancellationToken)
     {
-        await _ptlCommandService.SendRawAsync([basketId],
+
+        await _ptlCommandService.SendRawAsync(
             Pp505Builder.BuildFlashGreenCommandThenFix(basketId), cancellationToken);
-        
+
+        await _ptlCommandService.SendRawAsync(
+            Pp505Builder.BuildArmedNoLightEnabledButton([.. GetBasketIdsEnumerable().Where(id => id != basketId)]), cancellationToken);
+
         await HandleOperatorConfirmationFlow(basketId, cancellationToken);
     }
 
@@ -137,23 +141,20 @@ public sealed class CartManager(
 
         string? lastWrongBasketId = null;
 
+
         while (true)
         {
+
             var confirmedModule = await _ptlCommandService
                 .WaitForButtonAsync(basketId, cancellationToken);
 
             // CONFERMA CORRETTA
             if (confirmedModule == basketId)
             {
-                _logger.LogInformation(
-                    "Conferma corretta ricevuta da modulo {BasketId}",
-                    basketId);
-
                 if (lastWrongBasketId != null && lastWrongBasketId != basketId)
                 {
                     await _ptlCommandService.SendRawAsync(
-                        [lastWrongBasketId],
-                        Pp505Builder.BuildArmedNoLight([lastWrongBasketId]),
+                        Pp505Builder.BuildArmedNoLightEnabledButton([lastWrongBasketId]),
                         cancellationToken
                     );
                 }
@@ -169,8 +170,7 @@ public sealed class CartManager(
             if (confirmedModule == lastWrongBasketId)
             {
                 await _ptlCommandService.SendRawAsync(
-                    [confirmedModule],
-                    Pp505Builder.BuildArmedNoLight([confirmedModule]),
+                    Pp505Builder.BuildArmedNoLightEnabledButton([confirmedModule]),
                     cancellationToken
                 );
                 lastWrongBasketId = null;
@@ -182,15 +182,13 @@ public sealed class CartManager(
             if (lastWrongBasketId != null && lastWrongBasketId != basketId)
             {
                 await _ptlCommandService.SendRawAsync(
-                    [lastWrongBasketId],
-                    Pp505Builder.BuildArmedNoLight([lastWrongBasketId]),
+                    Pp505Builder.BuildArmedNoLightEnabledButton([lastWrongBasketId]),
                     cancellationToken
                 );
             }
 
             // accendi rosso fisso + beep sul nuovo basket errato
             await _ptlCommandService.SendRawAsync(
-                [confirmedModule],
                 Pp505Builder.BuildRedBuzzer(confirmedModule),
                 cancellationToken
             );
@@ -213,31 +211,30 @@ public sealed class CartManager(
     private async Task ResetAllBaskets(bool greenLightFirst, string? basketAvoidReset, CancellationToken cancellationToken)
     {
 
-        var basketsIds = _cartContainer.GetCarts().SelectMany(c => c.GetBaskets).Select(b => b.BasketId).ToArray();
+        var basketsIds = GetBasketIdsEnumerable();
 
         if (greenLightFirst)
         {
-            SendGreenCommandToBaskets(basketsIds, cancellationToken);
+            await SendGreenCommandToBaskets(basketsIds, cancellationToken);
 
             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
 
-        SendOffCommandToBaskets(basketAvoidReset != null ? [.. basketsIds.Where(b => b != basketAvoidReset)] : basketsIds, cancellationToken);
-    }
-
-    private void SendGreenCommandToBaskets(string[] basketIds, CancellationToken cancellationToken)
-    {
-        _ptlCommandService.SendRawAsync(
-                basketIds,
-                Pp505Builder.BuildGreenCommand(basketIds),
+        await _ptlCommandService.SendRawAsync(
+                Pp505Builder.BuildArmedNoLightButtonDisabled(basketAvoidReset != null ? [.. basketsIds.Where(b => b != basketAvoidReset)] : basketsIds),
                 cancellationToken);
+
     }
 
-    private void SendOffCommandToBaskets(string[] basketIds, CancellationToken cancellationToken)
+    private string[] GetBasketIdsEnumerable()
     {
-        _ptlCommandService.SendRawAsync(
-                basketIds,
-                Pp505Builder.BuildArmedNoLight(basketIds),
+        return [.. _cartContainer.GetCarts().SelectMany(c => c.GetBaskets).Select(b => b.BasketId)];
+    }
+
+    private async Task SendGreenCommandToBaskets(string[] basketIds, CancellationToken cancellationToken)
+    {
+        await _ptlCommandService.SendRawAsync(
+                Pp505Builder.BuildGreenCommand(basketIds),
                 cancellationToken);
     }
 

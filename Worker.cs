@@ -99,6 +99,10 @@ public sealed class Worker(
                     _logger.LogWarning("RIFIUTATO: {Reason}", result.Reason);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Processamento barcode '{Barcode}' cancellato", barcode);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore processamento barcode");
@@ -132,6 +136,7 @@ public sealed class Worker(
         }
         catch (OperationCanceledException)
         {
+            await _cartManager.ResetAll(cancellationToken);
             _logger.LogInformation("Worker interrotto su richiesta di shutdown");
         }
         catch (Exception ex)
@@ -218,7 +223,7 @@ public sealed class Worker(
 
     private async Task<bool> HandleResetApp(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Confermi reset? (s/n):");
+        _logger.LogInformation("Confermi reset? (s/N):");
 
         var confirmation = Console.ReadLine();
 

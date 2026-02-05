@@ -21,7 +21,7 @@ public static class Pp505Builder
 
     public static string BuildFlashGreenCommandThenFix(string moduleAddress)
     {
-        return "PP5050000m111m21!" + moduleAddress + BlankDisplay;
+        return "PP5050000m111m21!m4D" + moduleAddress + BlankDisplay;
     }
 
     public static string BuildGreenCommand(string moduleAddress)
@@ -79,12 +79,17 @@ public static class Pp505Builder
 
     public static string BuildRedBuzzer(string moduleAddress)
     {
-        return "PP5050000m12m21" + moduleAddress + BlankDisplay;
+        return "PP5050000m12m21m4D" + moduleAddress + BlankDisplay;
     }
 
-    public static string BuildArmedNoLight(string[] moduleAddress)
+    public static string BuildArmedNoLightEnabledButton (string[] moduleAddress)
     {
-        return "PP5050000m11" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
+        return "PP5050000m11m21m4D" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
+    }
+
+    public static string BuildArmedNoLightButtonDisabled(string[] moduleAddress)
+    {
+        return "PP5050000m11m21m4E" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
     }
 
     public static string BuildArmedNoLightThenBlinkRed(string moduleAddress)
@@ -93,12 +98,17 @@ public static class Pp505Builder
     }
 
 
-    public static string BuildOffCommand(string moduleAddress)
+    public static string BuildOffCommand(string[] moduleAddress)
     {
-        return TurnOffCommandPrefix + moduleAddress;
+        return TurnOffCommandPrefix + BuildOffMultiModuleString(moduleAddress) + BlankDisplay;
     }
 
     private static string BuildMultiModuleString(string[] moduleAddress)
+    {
+        return string.Join(BlankDisplay, moduleAddress);
+    }
+
+    private static string BuildOffMultiModuleString(string[] moduleAddress)
     {
         return string.Join(BlankDisplay, moduleAddress);
     }

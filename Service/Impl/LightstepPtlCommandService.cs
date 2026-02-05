@@ -16,7 +16,7 @@ public sealed class LightstepPtlCommandService(
     private readonly ILogger<LightstepPtlCommandService> _logger = logger;
 
 
-    public async Task SendRawAsync(string[] moduleAddress, string command, CancellationToken cancellationToken)
+    public async Task SendRawAsync(string command, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
