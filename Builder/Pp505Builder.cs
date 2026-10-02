@@ -24,70 +24,23 @@ public static class Pp505Builder
         return "PP5050000m111m21!m4D" + moduleAddress + BlankDisplay;
     }
 
-    public static string BuildGreenCommand(string moduleAddress)
-    {
-        var sb = new StringBuilder();
-
-        sb.Append(Command);
-        sb.Append(FnDataAfterKey);
-        sb.Append(SignalLightCtrl);
-
-        // LED verde fisso
-        sb.Append(LedModePrefix);
-        sb.Append("1!"); // verde fisso
-        sb.Append('\u0011'); // DC1
-
-        sb.Append(moduleAddress);
-
-        sb.Append(BlankDisplay);
-
-        return sb.ToString();
-    }
-
     public static string BuildGreenCommand(string[] moduleAddress)
     {
 
         return "PP5050000m11!" + BuildMultiModuleString(moduleAddress) + BlankDisplay; 
     }
 
-    public static string BuildFlashRedCommandThenOff(string moduleAddress)
+    public static string BuildRedBuzzerWithDisabledButton(string moduleAddress)
     {
-        var sb = new StringBuilder();
-
-        sb.Append(Command);
-        sb.Append(FnDataAfterKey);
-        sb.Append(SignalLightCtrl);
-
-        // m1 – stato iniziale: rosso lampeggiante
-        sb.Append(LedModePrefix);
-        sb.Append('3');
-        sb.Append('\u0011');
-        sb.Append('\u0011');
-
-        // m2 – after confirm: spento
-        sb.Append(AfterConfirmPrefix);
-        sb.Append('1');
-        sb.Append('\u0011');
-        sb.Append('\u0011');
-
-        sb.Append(moduleAddress);
-
-        sb.Append(BlankDisplay);
-
-        return sb.ToString();
+        return "PP5050000m12m21m4E" + moduleAddress + BlankDisplay;
     }
 
-    public static string BuildRedBuzzer(string moduleAddress)
-    {
-        return "PP5050000m12m21m4D" + moduleAddress + BlankDisplay;
-    }
-
-    public static string BuildArmedNoLightEnabledButton (string[] moduleAddress)
+    public static string BuildArmedNoLightWithEnabledButton (string[] moduleAddress)
     {
         return "PP5050000m11m21m4D" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
     }
 
-    public static string BuildArmedNoLightButtonDisabled(string[] moduleAddress)
+    public static string BuildArmedNoLightWithDisabledButton(string[] moduleAddress)
     {
         return "PP5050000m11m21m4E" + BuildMultiModuleString(moduleAddress) + BlankDisplay;     
     }

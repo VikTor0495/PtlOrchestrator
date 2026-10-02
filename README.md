@@ -75,7 +75,7 @@ L’applicazione:
 Eseguire dalla root del progetto:
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:FileVersion=1.0.0
 
 ### 🔹 Output si troverà:
 

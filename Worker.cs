@@ -34,7 +34,45 @@ public sealed class Worker(
             FullMode = BoundedChannelFullMode.DropWrite
         });
 
-    private async Task ReadInputLoop(CancellationToken ct)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("PTL Worker starting");
+
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
+
+            LoadBasketLimits(_optionsMonitor.Value, cancellationToken);
+
+            await _cartManager.ResetAll(cancellationToken);
+
+            ShowStartupLogs();
+
+            var inputTask = Task.Run(() => ReadInputLoop(cancellationToken), cancellationToken);
+            var processTask = Task.Run(() => ProcessLoop(cancellationToken), cancellationToken);
+
+            await Task.WhenAll(inputTask, processTask);
+        }
+        catch (OperationCanceledException)
+        {
+            await _cartManager.ResetAll(cancellationToken);
+            _logger.LogInformation("Worker interrotto su richiesta di shutdown");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Errore critico nel Worker");
+        }
+        finally
+        {
+            _barcodeChannel.Writer.TryComplete();
+            _cartManager.WriteCsvReport();
+            await _cartManager.ResetAll(cancellationToken);
+            _logger.LogInformation("Worker terminato");
+            _connectionService.Disconnect();
+        }
+    }
+
+        private async Task ReadInputLoop(CancellationToken ct)
     {
         try
         {
@@ -115,44 +153,6 @@ public sealed class Worker(
         }
     }
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            _logger.LogInformation("PTL Worker starting");
-
-            await _connectionService.EnsureConnectedAsync(cancellationToken);
-
-            LoadBasketLimits(_optionsMonitor.Value, cancellationToken);
-
-            await _cartManager.ResetAll(cancellationToken);
-
-            ShowStartupLogs();
-
-            var inputTask = Task.Run(() => ReadInputLoop(cancellationToken), cancellationToken);
-            var processTask = Task.Run(() => ProcessLoop(cancellationToken), cancellationToken);
-
-            await Task.WhenAll(inputTask, processTask);
-        }
-        catch (OperationCanceledException)
-        {
-            await _cartManager.ResetAll(cancellationToken);
-            _logger.LogInformation("Worker interrotto su richiesta di shutdown");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "Errore critico nel Worker");
-        }
-        finally
-        {
-            _barcodeChannel.Writer.TryComplete();
-            _cartManager.WriteCsvReport();
-            await _cartManager.ResetAll(cancellationToken);
-            _logger.LogInformation("Worker terminato");
-            _connectionService.Disconnect();
-        }
-    }
-
 
     private void LoadBasketLimits(
         BarcodeLimitOptions options,
@@ -201,19 +201,21 @@ public sealed class Worker(
     {
         var message = string.Join(Environment.NewLine,
         [
-            new string('-', 50),
+            "",
+            new string('─', 50),
             "",
             "╔═══════════════════════════════════════════════╗",
             "║           PUT-TO-LIGHT ORCHESTRATOR           ║",
             "╚═══════════════════════════════════════════════╝",
+            "                                          v.1.0.0",
             "",
             "Sistema inizializzato correttamente",
             "",
             "Comandi disponibili:",
             "",
             "- 'status'      - Mostra stato carrelli",
-            "- 'reset'       - Reset di tutti i carrelli (Genera report)",
-            "- 'exit/quit'   - Esci dal programma (Genera report)",
+            "- 'reset'       - Reset di tutti i carrelli",
+            "- 'exit/quit'   - Esci dal programma",
             "",
             new string('─', 50)
         ]);
