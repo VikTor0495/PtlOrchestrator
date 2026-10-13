@@ -58,7 +58,7 @@ L’applicazione:
 ## 🖥️ Requisiti
 
 ### In fase di sviluppo
-- .NET SDK **7 o 8**
+- .NET SDK **10**
 - Windows (per runtime `win-x64`)
 
 ### In produzione
