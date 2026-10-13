@@ -24,6 +24,7 @@ internal sealed class CartManagerTestContext
         Container = CartFactory.CreateSingleCartContainer(BasketIds);
         Ptl = new FakePtlCommandService();
         ReportWriter = new FakeCartReportWriter();
+        Recorder = new FakeOperationRecorder();
 
         var limits = new Dictionary<string, int> { [Barcode] = barcodeLimit };
 
@@ -32,6 +33,7 @@ internal sealed class CartManagerTestContext
             Ptl,
             ReportWriter,
             new StubBasketLimitService(limits),
+            Recorder,
             Options.Create(new TimeoutOptions { Minutes = timeoutMinutes }),
             NullLogger<CartManager>.Instance);
     }
@@ -43,6 +45,8 @@ internal sealed class CartManagerTestContext
     public FakePtlCommandService Ptl { get; }
 
     public FakeCartReportWriter ReportWriter { get; }
+
+    public FakeOperationRecorder Recorder { get; }
 
     public CartManager Manager { get; }
 

@@ -50,6 +50,12 @@ builder.Services
     .Validate(o => !string.IsNullOrWhiteSpace(o.FileName), "FileName non valido")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<StationOptions>()
+    .Bind(builder.Configuration.GetSection("Station"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.StationId), "StationId non valido")
+    .ValidateOnStart();
+
 builder.Services.Configure<TimeoutOptions>(
     builder.Configuration.GetSection("ProcessTimeout"));
 
@@ -62,6 +68,10 @@ builder.Services.AddSingleton<CsvBarcodeLimitReader, CsvBarcodeLimitReader>();
 builder.Services.AddSingleton<IBasketLimitService, BasketLimitService>();
 builder.Services.AddSingleton<IFileReader<BarcodeLimit>, CsvBarcodeLimitReader>();
 builder.Services.AddSingleton<IAppProcessingState, AppProcessingState>();
+builder.Services.AddSingleton<IOperatorSessionContext, OperatorSessionContext>();
+builder.Services.AddSingleton<IOperationEventSink, NullOperationEventSink>();
+builder.Services.AddSingleton<IOperationRecorder, OperationRecorder>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Registra il Worker (BackgroundService principale)
 builder.Services.AddHostedService<Worker>();

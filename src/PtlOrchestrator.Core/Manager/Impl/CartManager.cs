@@ -1,15 +1,11 @@
+using PtlOrchestrator.Builder;
 using PtlOrchestrator.Configuration;
+using PtlOrchestrator.Contracts.Operations;
 using PtlOrchestrator.Domain;
-using PtlOrchestrator.Domain.Enum;
+using PtlOrchestrator.File;
 using PtlOrchestrator.Service;
-using PtlOrchestrator.Manager;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PtlOrchestrator.Builder;
-using PtlOrchestrator.File;
-using System.Threading;
-using System.Configuration;
-using System.Threading.Tasks;
 
 namespace PtlOrchestrator.Manager.Impl;
 
@@ -18,6 +14,7 @@ public sealed class CartManager(
     IPtlCommandService ptlCommandService,
     ICartReportWriter cartReportWriter,
     IBasketLimitService basketLimitService,
+    IOperationRecorder operationRecorder,
     IOptions<TimeoutOptions> timeoutOptions,
     ILogger<CartManager> logger) : ICartManager
 {
@@ -29,6 +26,8 @@ public sealed class CartManager(
     private readonly ICartReportWriter _cartReportWriter = cartReportWriter;
 
     private readonly IBasketLimitService _basketLimitService = basketLimitService;
+
+    private readonly IOperationRecorder _operationRecorder = operationRecorder;
 
     private readonly TimeoutOptions _timeoutOptions = timeoutOptions.Value;
 
@@ -42,7 +41,8 @@ public sealed class CartManager(
 
         if (!_basketLimitService.HasMaxLimit(barcode))
         {
-            return CartAssignmentResult.Rejected(
+            return await RejectAsync(
+                barcode,
                 $"Barcode {barcode} non presente nel file di configurazione dei limiti di carico");
         }
 
@@ -50,6 +50,7 @@ public sealed class CartManager(
 
         if (!result.Success)
         {
+            await RecordRejectionAsync(barcode, result.Reason);
             return result;
         }
 
@@ -59,6 +60,13 @@ public sealed class CartManager(
               result.Cart!.CartId,
               result.Basket!.BasketId,
               result.Type);
+
+        await _operationRecorder.RecordAsync(
+            OperationEventType.BarcodeAccepted,
+            barcode,
+            result.Cart.CartId,
+            result.Basket.BasketId,
+            details: result.Type.ToString());
 
         try
         {
@@ -71,7 +79,16 @@ public sealed class CartManager(
         {
             await ResetAllBaskets(false, null, cancellationToken);
             Rollback(result);
-            return CartAssignmentResult.Rejected($"Timeout raggiunto durante il processo di inserimento Carrello {result.Cart!.CartId}, Basket {result.Basket!.BasketId}");
+
+            var timeoutReason = $"Timeout raggiunto durante il processo di inserimento Carrello {result.Cart!.CartId}, Basket {result.Basket!.BasketId}";
+            await _operationRecorder.RecordAsync(
+                OperationEventType.OperationTimedOut,
+                barcode,
+                result.Cart.CartId,
+                result.Basket.BasketId,
+                timeoutReason);
+
+            return CartAssignmentResult.Rejected(timeoutReason);
         }
         catch (Exception ex)
         {
@@ -82,12 +99,28 @@ public sealed class CartManager(
                 result.Basket.BasketId);
             Rollback(result);
 
+            await _operationRecorder.RecordAsync(
+                OperationEventType.PtlFault,
+                barcode,
+                result.Cart.CartId,
+                result.Basket.BasketId,
+                ex.Message);
+
             return CartAssignmentResult.Rejected($"Errore nel processo di inserimento Carrello {result.Cart!.CartId}, Basket {result.Basket!.BasketId}: {ex.Message}");
         }
 
         return result;
 
     }
+
+    private async Task<CartAssignmentResult> RejectAsync(string barcode, string reason)
+    {
+        await RecordRejectionAsync(barcode, reason);
+        return CartAssignmentResult.Rejected(reason);
+    }
+
+    private Task RecordRejectionAsync(string barcode, string? reason)
+        => _operationRecorder.RecordAsync(OperationEventType.BarcodeRejected, barcode, details: reason);
 
     private CancellationTokenSource SetupTimeoutCancellationTokenSource(CancellationToken parentToken)
     {
@@ -102,12 +135,18 @@ public sealed class CartManager(
 
         if (result != null && result.Basket != null)
         {
-            await HandlePickLightFlow(result.Basket.BasketId, cancellationToken);
+            await HandlePickLightFlow(result, cancellationToken);
 
 
             _logger.LogInformation(
                 "Conferma ricevuta per Cart {CartId}, Basket {BasketId}",
                 result.Cart!.CartId,
+                result.Basket.BasketId);
+
+            await _operationRecorder.RecordAsync(
+                OperationEventType.BasketConfirmed,
+                result.Basket.Barcode,
+                result.Cart.CartId,
                 result.Basket.BasketId);
 
 
@@ -123,8 +162,9 @@ public sealed class CartManager(
         }
     }
 
-    private async Task HandlePickLightFlow(string basketId, CancellationToken cancellationToken)
+    private async Task HandlePickLightFlow(CartAssignmentResult assignment, CancellationToken cancellationToken)
     {
+        var basketId = assignment.Basket!.BasketId;
 
         await _ptlCommandService.SendRawAsync(
             Pp505Builder.BuildFlashGreenCommandThenFix(basketId), cancellationToken);
@@ -132,12 +172,13 @@ public sealed class CartManager(
         await _ptlCommandService.SendRawAsync(
             Pp505Builder.BuildArmedNoLightEnabledButton([.. GetBasketIdsEnumerable().Where(id => id != basketId)]), cancellationToken);
 
-        await HandleOperatorConfirmationFlow(basketId, cancellationToken);
+        await HandleOperatorConfirmationFlow(assignment, cancellationToken);
     }
 
 
-    private async Task HandleOperatorConfirmationFlow(string basketId, CancellationToken cancellationToken)
+    private async Task HandleOperatorConfirmationFlow(CartAssignmentResult assignment, CancellationToken cancellationToken)
     {
+        var basketId = assignment.Basket!.BasketId;
 
         string? lastWrongBasketId = null;
 
@@ -166,6 +207,13 @@ public sealed class CartManager(
                 "Inserimento errato in modulo {WrongBasket}, atteso {ExpectedBasket}",
                 confirmedModule,
                 basketId);
+
+            await _operationRecorder.RecordAsync(
+                OperationEventType.WrongModulePressed,
+                assignment.Basket.Barcode,
+                assignment.Cart!.CartId,
+                basketId,
+                details: $"Premuto modulo {confirmedModule}, atteso {basketId}");
 
             if (confirmedModule == lastWrongBasketId)
             {
@@ -206,6 +254,8 @@ public sealed class CartManager(
         _cartContainer.ResetAll();
 
         _logger.LogInformation("Reset completo di tutti i carrelli");
+
+        await _operationRecorder.RecordAsync(OperationEventType.CartsReset);
     }
 
     private async Task ResetAllBaskets(bool greenLightFirst, string? basketAvoidReset, CancellationToken cancellationToken)
