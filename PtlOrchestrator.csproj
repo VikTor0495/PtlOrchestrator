@@ -8,6 +8,7 @@
     <AssemblyName>PtlOrchestrator</AssemblyName>
     <RootNamespace>PtlOrchestrator</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
