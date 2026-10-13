@@ -75,11 +75,12 @@ L’applicazione:
 Eseguire dalla root del progetto:
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish src/PtlOrchestrator.Console -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
 
 ### 🔹 Output si troverà:
 
-bin/
+src/PtlOrchestrator.Console/bin/
 └─ Release/
     └─ publish/
         ├─ PtlOrchestrator.exe
