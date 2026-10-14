@@ -19,10 +19,10 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 1.6 Composition root Station: `Host` + `AddPtlCore` + Serilog + registrazioni Station, validazione `StationSettings`
 
 ## Fase 2 — GUI WPF (MVVM, CommunityToolkit.Mvvm)
-- [ ] 2.1 `MainWindow` + `MainViewModel`: stato connessione PTL/server, coda eventi pendenti/quarantena
-- [ ] 2.2 Schermata login (badge/PIN) e turno operatore
-- [ ] 2.3 Vista lavoro: ultima scansione/esito (`IScanActivity`), carrelli e ceste con colori/stato
-- [ ] 2.4 Gestione errori e messaggi per l'operatore (sistema occupato, PTL in errore, offline)
+- [x] 2.1 `MainWindow` + `MainViewModel`: stato connessione PTL/server, coda eventi pendenti/quarantena
+- [x] 2.2 Schermata login (badge/PIN) e turno operatore
+- [x] 2.3 Vista lavoro: ultima scansione/esito (`IScanActivity`), carrelli e ceste con colori/stato
+- [x] 2.4 Gestione errori e messaggi per l'operatore (sistema occupato, PTL in errore, offline)
 - [ ] 2.5 Pagina diagnostica (log recenti, forza sync, stato outbox)
 
 ## Fase 3 — Server completo

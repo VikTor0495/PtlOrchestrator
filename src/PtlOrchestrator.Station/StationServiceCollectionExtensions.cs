@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using PtlOrchestrator.DependencyInjection;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Station.Configuration;
+using PtlOrchestrator.Station.Presentation;
 using PtlOrchestrator.Station.Scanner;
 using PtlOrchestrator.Station.Storage;
 using PtlOrchestrator.Station.Sync;
@@ -48,6 +49,10 @@ public static class StationServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(central.TimeoutSeconds);
             client.DefaultRequestHeaders.Add(ApiKeyHeader, central.ApiKey);
         });
+
+        services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
+        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<MainWindow>();
 
         services.AddSingleton<EventSyncService>();
         services.AddHostedService(sp => sp.GetRequiredService<EventSyncService>());

@@ -16,4 +16,4 @@ L'evolutiva porta il vecchio eseguibile console a un sistema a due livelli:
 
 ## Stato in una riga
 Core, Contracts e Api completi e testati; Station headless completa (storage, sync eventi/operatori, scanner seriale, composition root).
-Mancano: GUI WPF, rifiniture server, migrazione della Console. Vedi [Roadmap](Roadmap.md).
+Mancano: pagina diagnostica, rifiniture server, migrazione della Console. Vedi [Roadmap](Roadmap.md).

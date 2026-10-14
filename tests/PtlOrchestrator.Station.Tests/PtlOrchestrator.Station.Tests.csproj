@@ -16,6 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- serve per simulare ILightstepConnectionService, che espone un tipo di questa libreria -->
+    <Reference Include="AioiSystems.Lightstep">
+      <HintPath>..\..\libs\Lightstep\AioiSystems.Lightstep.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
