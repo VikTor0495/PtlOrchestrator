@@ -16,6 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- serve per simulare ILightstepConnectionService, che espone un tipo di questa libreria -->
+    <Reference Include="AioiSystems.Lightstep">
+      <HintPath>..\..\libs\Lightstep\AioiSystems.Lightstep.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.13" />

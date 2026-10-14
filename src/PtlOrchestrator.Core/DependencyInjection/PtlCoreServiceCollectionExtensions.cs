@@ -39,6 +39,10 @@ public static class PtlCoreServiceCollectionExtensions
         services.AddSingleton<IOperatorLoginService, OperatorLoginService>();
         services.AddSingleton<IScanDispatcher, ScanDispatcher>();
 
+        // prepara il PTL all'avvio e lo riconsegna allo spegnimento; parte prima dello ScanListener
+        services.AddSingleton<PtlLifecycleService>();
+        services.AddHostedService(sp => sp.GetRequiredService<PtlLifecycleService>());
+
         // un'unica istanza, esposta sia come servizio in background sia come sorgente di notifiche per la UI
         services.AddSingleton<ScanListener>();
         services.AddSingleton<IScanActivity>(sp => sp.GetRequiredService<ScanListener>());

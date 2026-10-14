@@ -17,6 +17,7 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 1.4 `SqliteOperatorCache` implementa già `IOperatorDirectory` (login offline) + test
 - [x] 1.5 `SerialBarcodeSource` (`IBarcodeSource` su `System.IO.Ports`, riconnessione) + test su astrazione della porta
 - [x] 1.6 Composition root Station: `Host` + `AddPtlCore` + Serilog + registrazioni Station, validazione `StationSettings`
+- [x] 1.7 `PtlLifecycleService` (Core): connessione PTL, limiti barcode e azzeramento all'avvio; report, azzeramento e disconnessione allo spegnimento (era nel vecchio Worker)
 
 ## Fase 2 — GUI WPF (MVVM, CommunityToolkit.Mvvm)
 - [x] 2.1 `MainWindow` + `MainViewModel`: stato connessione PTL/server, coda eventi pendenti/quarantena
