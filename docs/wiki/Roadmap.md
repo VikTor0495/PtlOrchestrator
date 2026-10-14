@@ -24,7 +24,7 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 2.2 Schermata login (badge/PIN) e turno operatore
 - [x] 2.3 Vista lavoro: ultima scansione/esito (`IScanActivity`), carrelli e ceste con colori/stato
 - [x] 2.4 Gestione errori e messaggi per l'operatore (sistema occupato, PTL in errore, offline)
-- [ ] 2.5 Pagina diagnostica (log recenti, forza sync, stato outbox)
+- [x] 2.5 Finestra Diagnostica: stato coda/sync/PTL, sincronizza ora, scrivi report CSV, azzera carrelli (ex comando `reset`). Log recenti: vedi `logs/` accanto all'eseguibile
 
 ## Fase 3 — Server completo
 - [ ] 3.1 Verificare idempotenza ingest per `EventId` con test

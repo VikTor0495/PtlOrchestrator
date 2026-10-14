@@ -162,6 +162,9 @@
             </StatusBarItem>
             <Separator />
             <StatusBarItem Content="{Binding PendingEvents, StringFormat='Eventi da inviare: {0}'}" />
+            <StatusBarItem HorizontalAlignment="Right">
+                <Button Padding="10,2" Content="Diagnostica…" Click="Diagnostics_Click" />
+            </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Foreground="#B91C1C" Text="{Binding QuarantinedEvents, StringFormat='In quarantena: {0}'}">
                     <TextBlock.Style>

@@ -53,6 +53,8 @@ public static class StationServiceCollectionExtensions
         services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
+        services.AddTransient<DiagnosticsViewModel>();
+        services.AddTransient<DiagnosticsWindow>();
 
         services.AddSingleton<EventSyncService>();
         services.AddHostedService(sp => sp.GetRequiredService<EventSyncService>());

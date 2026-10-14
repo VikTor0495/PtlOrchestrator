@@ -1,0 +1,35 @@
+<Window x:Class="PtlOrchestrator.Station.DiagnosticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Diagnostica" Width="520" Height="420" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Loaded="Window_Loaded">
+    <StackPanel Margin="20">
+        <TextBlock FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" Text="Stato" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Eventi da inviare" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PendingEvents}" />
+            <TextBlock Grid.Row="1" Text="Eventi in quarantena" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding QuarantinedEvents}" />
+            <TextBlock Grid.Row="2" Text="Ultimo aggiornamento operatori" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastOperatorSync}" />
+            <TextBlock Grid.Row="3" Text="PTL connesso" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding IsPtlConnected}" />
+        </Grid>
+
+        <TextBlock FontSize="18" FontWeight="SemiBold" Margin="0,24,0,12" Text="Azioni" />
+        <WrapPanel>
+            <Button Padding="14,6" Margin="0,0,8,8" Content="Sincronizza ora" Command="{Binding SyncNowCommand}" />
+            <Button Padding="14,6" Margin="0,0,8,8" Content="Scrivi report CSV" Command="{Binding WriteReportCommand}" />
+            <Button x:Name="ResetButton" Padding="14,6" Margin="0,0,8,8" Content="Azzera carrelli…" Click="ResetButton_Click" />
+        </WrapPanel>
+
+        <TextBlock Margin="0,16,0,0" TextWrapping="Wrap" Foreground="#374151" Text="{Binding Result}" />
+    </StackPanel>
+</Window>
