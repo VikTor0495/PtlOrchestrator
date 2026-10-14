@@ -33,7 +33,19 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 3.4 Dockerfile + compose (Api + PostgreSQL), health check `/health` — **da provare**, Docker assente sul PC di sviluppo
 
 ## Fase 4 — Chiusura
-- [ ] 4.1 Migrare/dismettere la Console su `AddPtlCore` (o rimuoverla)
+- [ ] 4.1 **Decisione aperta**: la Console resta com'è (storica, senza operatori né DB). Migrarla su `AddPtlCore` ne cambierebbe il comportamento (login obbligatorio). Proposta: dismetterla dopo la validazione sul campo della Station
 - [x] 4.2 Contratto client Station ↔ Api provato end-to-end (`StationClientContractTests`: invio, duplicati, rifiuti, chiave errata, sync incrementale operatori). Manca un test con la GUI e la porta seriale reali: richiede hardware
-- [ ] 4.3 Installer/publish Station (self-contained)
-- [ ] 4.4 Aggiornare README/readme.txt, merge su `master`
+- [x] 4.3 Publish self-contained della Station provato (EXE singolo, parte e crea data/ e logs/); vedi Setup e Build
+- [x] 4.4 README aggiornato con rimando alla wiki. **Merge su `master`: da fare a validazione sul campo conclusa**
+
+## Da validare sul campo (non verificabile da software)
+- [ ] Postazione con PTL Lightstep reale: connessione, accensione lampade, conferma pulsante, reset
+- [ ] Pistola barcode su porta seriale reale (`SerialScanner`): terminatori CR/LF, riconnessione a cavo staccato
+- [ ] Aspetto e usabilità della GUI su monitor/touch reale (testata solo l'avvio e la logica dei ViewModel)
+- [ ] `docker compose up` (non provato: Docker assente sul PC di sviluppo)
+- [ ] Server su PostgreSQL reale (i test usano SQLite in memoria)
+
+## Idee future (non pianificate)
+- Interfaccia di amministrazione per operatori e report (oggi solo via API con chiave Admin)
+- Logout automatico per inattività
+- Visualizzazione dei log recenti nella finestra Diagnostica

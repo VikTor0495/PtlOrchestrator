@@ -38,3 +38,15 @@ docker compose up -d --build
 ```
 L'Api risponde su `http://localhost:5000` (`API_PORT`), applica le migrazioni all'avvio e conserva i dati nel volume `ptl-data`.
 > Nota: `Dockerfile` e `docker-compose.yml` sono stati scritti ma **non ancora provati** (Docker non era installato sul PC di sviluppo). Al primo uso verificare il build.
+
+## Pubblicare la Station (EXE singolo)
+```powershell
+dotnet publish src/PtlOrchestrator.Station -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+Provato: produce `PtlStation.exe` (~144 MB) e parte da solo. Accanto all'exe devono stare:
+- `appsettings.json` (viene copiato dal publish): impostare `Central:BaseUrl`, `Central:ApiKey` (chiave **Station** del server), `SerialScanner:PortName`, `Lightstep:*`, `Carts`
+- `prodotti_config.csv` (o il nome in `LimitBarcode:FileName`): **non è nel repo**, è un dato di installazione. Senza questo file la postazione resta "sistema occupato" e riprova ogni 5 s (vedi `logs/`)
+
+Alla prima esecuzione vengono creati `data/station.db` (coda eventi e cache operatori: **non cancellare** se ci sono eventi non ancora inviati) e `logs/station-AAAAMMGG.log`.
+
+Prima di usare la postazione: creare almeno un operatore con la chiave **Admin** (`POST /api/operators`), perché il login ha bisogno della cache operatori scaricata dal server.

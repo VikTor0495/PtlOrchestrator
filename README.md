@@ -1,5 +1,7 @@
 # PTL Orchestrator – Barcode Cart Manager
 
+> **Evoluzione in corso (branch `feature/evolutiva-gui-db`)**: il progetto ora è composto da una **postazione WPF** (`PtlOrchestrator.Station`, con database locale SQLite e funzionamento offline), un **server centrale** (`PtlOrchestrator.Api`, ASP.NET Core + PostgreSQL) e il **Core** condiviso. La console descritta sotto è la versione storica. Documentazione completa, architettura e roadmap: [`docs/wiki/Home.md`](docs/wiki/Home.md).
+
 ## 📌 Descrizione generale
 
 **PTL Orchestrator** è un’applicazione **console/worker self-contained** che gestisce un sistema **Pick-to-Light (PTL)** per il caricamento guidato di prodotti su **carrelli e basket**, utilizzando **barcode** e **conferma fisica tramite pulsante** sul modulo PTL.
