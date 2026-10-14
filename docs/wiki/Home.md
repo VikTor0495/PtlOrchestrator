@@ -15,5 +15,5 @@ L'evolutiva porta il vecchio eseguibile console a un sistema a due livelli:
 - [Roadmap](Roadmap.md) — stato dei lavori e prossimi passi
 
 ## Stato in una riga
-Core, Contracts e Api completi e testati; Station ha solo lo storage locale (cache operatori + outbox).
-Mancano: sincronizzazione Station↔Api, scanner seriale, GUI WPF, migrazione della Console. Vedi [Roadmap](Roadmap.md).
+Core, Contracts e Api completi e testati; Station headless completa (storage, sync eventi/operatori, scanner seriale, composition root).
+Mancano: GUI WPF, rifiniture server, migrazione della Console. Vedi [Roadmap](Roadmap.md).

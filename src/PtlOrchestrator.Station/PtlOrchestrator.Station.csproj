@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="System.IO" />
     <InternalsVisibleTo Include="PtlOrchestrator.Station.Tests" />
   </ItemGroup>
