@@ -36,12 +36,12 @@ L’applicazione:
 ┌───────────────┐
 │ Barcode Input │
 └───────┬───────┘
-↓
+        ↓
 ┌─────────────────────┐
-│ CartManager │
-│ (logica dominio) │
+│ CartManager         │
+│ (logica dominio)    │
 └───────┬─────────────┘
-↓
+        ↓
 ┌─────────────────────┐
 │ PTL Command Service │───► Controller PTL (TCP/IP)
 └─────────────────────┘

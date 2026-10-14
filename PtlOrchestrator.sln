@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -15,6 +16,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PtlOrchestrator.Api", "src\PtlOrchestrator.Api\PtlOrchestrator.Api.csproj", "{50A735FA-2A72-43EF-80C9-8CC44AC736AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PtlOrchestrator.Api.Tests", "tests\PtlOrchestrator.Api.Tests\PtlOrchestrator.Api.Tests.csproj", "{3FD395D1-5418-4832-AF8D-DCE97C33C586}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PtlOrchestrator.Station", "src\PtlOrchestrator.Station\PtlOrchestrator.Station.csproj", "{2F86143A-B028-42F1-A6A1-568D0ED7A004}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PtlOrchestrator.Station.Tests", "tests\PtlOrchestrator.Station.Tests\PtlOrchestrator.Station.Tests.csproj", "{D9A3C13D-E236-467C-94F5-DB482F873769}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -110,6 +115,30 @@ Global
 		{3FD395D1-5418-4832-AF8D-DCE97C33C586}.Release|x64.Build.0 = Release|Any CPU
 		{3FD395D1-5418-4832-AF8D-DCE97C33C586}.Release|x86.ActiveCfg = Release|Any CPU
 		{3FD395D1-5418-4832-AF8D-DCE97C33C586}.Release|x86.Build.0 = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|x64.Build.0 = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Debug|x86.Build.0 = Debug|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|x64.ActiveCfg = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|x64.Build.0 = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|x86.ActiveCfg = Release|Any CPU
+		{2F86143A-B028-42F1-A6A1-568D0ED7A004}.Release|x86.Build.0 = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|x64.Build.0 = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Debug|x86.Build.0 = Debug|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|x64.ActiveCfg = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|x64.Build.0 = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|x86.ActiveCfg = Release|Any CPU
+		{D9A3C13D-E236-467C-94F5-DB482F873769}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
