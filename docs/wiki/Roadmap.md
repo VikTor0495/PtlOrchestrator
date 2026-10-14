@@ -13,8 +13,8 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 ## Fase 1 — Station headless (servizi senza GUI)
 - [x] 1.1 `HttpCentralClient`: invio eventi (`/api/events`) e snapshot operatori, con `X-Api-Key`, timeout, test con handler finto
 - [x] 1.2 `EventSyncService` (BackgroundService): svuota l'outbox a batch; temporanei → `RecordFailure`, 4xx → `Quarantine`
-- [ ] 1.3 `OperatorSyncService`: sync incrementale (`since`) nella cache operatori
-- [ ] 1.4 `SqliteOperatorDirectory` (`IOperatorDirectory` sulla cache) + test
+- [x] 1.3 `OperatorSyncService`: sync incrementale (`since`) nella cache operatori
+- [x] 1.4 `SqliteOperatorCache` implementa già `IOperatorDirectory` (login offline) + test
 - [ ] 1.5 `SerialBarcodeSource` (`IBarcodeSource` su `System.IO.Ports`, riconnessione) + test su astrazione della porta
 - [ ] 1.6 Composition root Station: `Host` + `AddPtlCore` + Serilog + registrazioni Station, validazione `StationSettings`
 
