@@ -16,6 +16,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      Il client HTTP della postazione (WPF, solo Windows) è codice puro: lo si compila anche qui
+      per provarlo contro l'Api reale, così il contratto fra i due non può divergere senza che un test fallisca.
+    -->
+    <Compile Include="..\..\src\PtlOrchestrator.Station\Sync\CentralResult.cs" Link="StationClient\CentralResult.cs" />
+    <Compile Include="..\..\src\PtlOrchestrator.Station\Sync\ICentralClient.cs" Link="StationClient\ICentralClient.cs" />
+    <Compile Include="..\..\src\PtlOrchestrator.Station\Sync\HttpCentralClient.cs" Link="StationClient\HttpCentralClient.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />

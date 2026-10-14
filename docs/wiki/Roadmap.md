@@ -34,6 +34,6 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 
 ## Fase 4 — Chiusura
 - [ ] 4.1 Migrare/dismettere la Console su `AddPtlCore` (o rimuoverla)
-- [ ] 4.2 Test di integrazione Station↔Api end-to-end
+- [x] 4.2 Contratto client Station ↔ Api provato end-to-end (`StationClientContractTests`: invio, duplicati, rifiuti, chiave errata, sync incrementale operatori). Manca un test con la GUI e la porta seriale reali: richiede hardware
 - [ ] 4.3 Installer/publish Station (self-contained)
 - [ ] 4.4 Aggiornare README/readme.txt, merge su `master`
