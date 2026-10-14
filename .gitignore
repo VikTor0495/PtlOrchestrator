@@ -53,3 +53,6 @@ logs/
 
 # User Secrets
 secrets.json
+
+# Segreti locali
+.env

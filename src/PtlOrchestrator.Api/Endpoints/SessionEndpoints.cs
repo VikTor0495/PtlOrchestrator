@@ -1,3 +1,4 @@
+using System.Text;
 using PtlOrchestrator.Api.Security;
 using PtlOrchestrator.Api.Services;
 
@@ -7,6 +8,7 @@ public static class SessionEndpoints
 {
     private const int DefaultTake = 100;
     private const int MaxTake = 500;
+    private const int MaxExportRows = 5000;
 
     public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
     {
@@ -14,6 +16,7 @@ public static class SessionEndpoints
             .RequireAuthorization(ApiKeyDefaults.AdminPolicy);
 
         sessions.MapGet("/", ListAsync);
+        sessions.MapGet("/export", ExportAsync);
         sessions.MapGet("/{sessionId:guid}/events", GetEventsAsync);
 
         return app;
@@ -32,6 +35,21 @@ public static class SessionEndpoints
         var sessions = await reportService.ListAsync(new SessionQuery(from, to, operatorId, limit), cancellationToken);
 
         return Results.Ok(sessions);
+    }
+
+    private static async Task<IResult> ExportAsync(
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        Guid? operatorId,
+        ISessionReportService reportService,
+        CancellationToken cancellationToken)
+    {
+        var sessions = await reportService.ListAsync(new SessionQuery(from, to, operatorId, MaxExportRows), cancellationToken);
+
+        // il BOM fa riconoscere a Excel la codifica UTF-8 (accenti nei nomi)
+        var content = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(SessionCsvWriter.Write(sessions))).ToArray();
+
+        return Results.File(content, "text/csv; charset=utf-8", $"turni-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv");
     }
 
     private static async Task<IResult> GetEventsAsync(

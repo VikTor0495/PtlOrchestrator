@@ -1,0 +1,34 @@
+# Server centrale + PostgreSQL.  Avvio:  docker compose up -d --build
+# Prima copiare .env.example in .env e impostare password e chiavi.
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ptl
+      POSTGRES_USER: ptl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?imposta POSTGRES_PASSWORD in .env}
+    volumes:
+      - ptl-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ptl -d ptl"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Ptl: Host=db;Port=5432;Database=ptl;Username=ptl;Password=${POSTGRES_PASSWORD}
+      ApiKeys__StationKey: ${STATION_KEY:?imposta STATION_KEY in .env}
+      ApiKeys__AdminKey: ${ADMIN_KEY:?imposta ADMIN_KEY in .env}
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "${API_PORT:-5000}:8080"
+
+volumes:
+  ptl-data:

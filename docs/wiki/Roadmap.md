@@ -27,10 +27,10 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 2.5 Finestra Diagnostica: stato coda/sync/PTL, sincronizza ora, scrivi report CSV, azzera carrelli (ex comando `reset`). Log recenti: vedi `logs/` accanto all'eseguibile
 
 ## Fase 3 — Server completo
-- [ ] 3.1 Verificare idempotenza ingest per `EventId` con test
-- [ ] 3.2 Endpoint registrazione/heartbeat postazioni (tabella `stations`)
-- [ ] 3.3 Report turni: export CSV
-- [ ] 3.4 Dockerfile + compose (Api + PostgreSQL), health check
+- [x] 3.1 Idempotenza ingest per `EventId` (già implementata e coperta da `EventIngestTests`)
+- [x] 3.2 `GET /api/stations` con ultima attività (heartbeat implicito dall'invio eventi; nessun endpoint dedicato)
+- [x] 3.3 Export CSV dei turni (`GET /api/sessions/export`)
+- [x] 3.4 Dockerfile + compose (Api + PostgreSQL), health check `/health` — **da provare**, Docker assente sul PC di sviluppo
 
 ## Fase 4 — Chiusura
 - [ ] 4.1 Migrare/dismettere la Console su `AddPtlCore` (o rimuoverla)

@@ -30,3 +30,11 @@ dotnet publish src/PtlOrchestrator.Console -c Release -r win-x64 --self-containe
 dotnet tool restore
 dotnet ef migrations add <Nome> --project src/PtlOrchestrator.Api
 ```
+
+## Server con Docker (Api + PostgreSQL)
+```powershell
+copy .env.example .env      # poi compila password e chiavi (>= 16 caratteri)
+docker compose up -d --build
+```
+L'Api risponde su `http://localhost:5000` (`API_PORT`), applica le migrazioni all'avvio e conserva i dati nel volume `ptl-data`.
+> Nota: `Dockerfile` e `docker-compose.yml` sono stati scritti ma **non ancora provati** (Docker non era installato sul PC di sviluppo). Al primo uso verificare il build.

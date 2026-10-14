@@ -18,6 +18,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IOperatorService, OperatorService>();
 builder.Services.AddScoped<IOperationEventIngestService, OperationEventIngestService>();
 builder.Services.AddScoped<ISessionReportService, SessionReportService>();
+builder.Services.AddScoped<IStationService, StationService>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
@@ -40,6 +41,7 @@ app.MapHealthChecks("/health");
 app.MapOperationEventEndpoints();
 app.MapOperatorEndpoints();
 app.MapSessionEndpoints();
+app.MapStationEndpoints();
 
 await app.RunAsync();
 

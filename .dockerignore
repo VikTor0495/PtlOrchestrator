@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/logs/
+.git/
+.vs/
+tests/
+docs/
+libs/
+*.md
+.env
