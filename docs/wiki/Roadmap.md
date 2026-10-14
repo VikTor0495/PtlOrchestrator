@@ -11,7 +11,7 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] Wiki + `CLAUDE.md`
 
 ## Fase 1 — Station headless (servizi senza GUI)
-- [ ] 1.1 `HttpCentralClient`: invio eventi (`/api/events`) e snapshot operatori, con `X-Api-Key`, timeout, test con handler finto
+- [x] 1.1 `HttpCentralClient`: invio eventi (`/api/events`) e snapshot operatori, con `X-Api-Key`, timeout, test con handler finto
 - [ ] 1.2 `EventSyncService` (BackgroundService): svuota l'outbox a batch; temporanei → `RecordFailure`, 4xx → `Quarantine`
 - [ ] 1.3 `OperatorSyncService`: sync incrementale (`since`) nella cache operatori
 - [ ] 1.4 `SqliteOperatorDirectory` (`IOperatorDirectory` sulla cache) + test
