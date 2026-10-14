@@ -15,7 +15,7 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 1.2 `EventSyncService` (BackgroundService): svuota l'outbox a batch; temporanei → `RecordFailure`, 4xx → `Quarantine`
 - [x] 1.3 `OperatorSyncService`: sync incrementale (`since`) nella cache operatori
 - [x] 1.4 `SqliteOperatorCache` implementa già `IOperatorDirectory` (login offline) + test
-- [ ] 1.5 `SerialBarcodeSource` (`IBarcodeSource` su `System.IO.Ports`, riconnessione) + test su astrazione della porta
+- [x] 1.5 `SerialBarcodeSource` (`IBarcodeSource` su `System.IO.Ports`, riconnessione) + test su astrazione della porta
 - [ ] 1.6 Composition root Station: `Host` + `AddPtlCore` + Serilog + registrazioni Station, validazione `StationSettings`
 
 ## Fase 2 — GUI WPF (MVVM, CommunityToolkit.Mvvm)
