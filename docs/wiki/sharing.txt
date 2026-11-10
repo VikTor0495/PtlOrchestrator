@@ -1,0 +1,18 @@
+ti aggiorno sulla call avuta con Fabio Caponi, referente tecnico lato Laziale Distribuzione.
+
+Punti chiariti e su cui possiamo partire
+
+- GUI operatore: proseguiamo lo sviluppo dell'interfaccia sul componente già esistente.
+- Architettura: il componente client resta sul server che l'operatore usa (postazione con touch screen). Il "cervello" centrale, che orchestra i vari client e i carrelli, sarà installato su un server dedicato con queste caratteristiche: 4 CPU, 8 GB di RAM, 80–100 GB di disco, accesso SSH.
+
+Punti ancora da chiarire lato cliente
+
+Su questi aggiorneremo il progetto man mano che i requisiti si precisano:
+- specifiche dell'interfaccia WMS Gulliver/Kube (protocollo, formato dei dati, tracciati);
+- dettagli dello scambio file via SFTP e del messaggio di ritorno OK/KO;
+- tabella di anagrafica e transcodifica dei codici (QR ABB / EAN), con peso e numero massimo di pezzi per cassetta.
+
+Ti terrò aggiornata man mano che arrivano le risposte.
+
+Un saluto,
+Vittorio
