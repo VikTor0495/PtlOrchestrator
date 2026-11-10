@@ -1,0 +1,11 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+insert_final_newline = true
+
+# Logging: i suggerimenti LoggerMessage (CA1848/CA1873) non sono utili per questo worker
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
