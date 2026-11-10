@@ -53,3 +53,21 @@ logs/
 
 # User Secrets
 secrets.json
+
+# Local config overrides (may contain license keys / machine-specific values)
+appsettings.Development.json
+appsettings.*.local.json
+
+# PtlOrchestrator runtime output (CSV report written next to the exe)
+report/
+
+# dotnet publish output (README: bin/Release/publish)
+publish/
+
+# Claude Code: local settings are personal, CLAUDE.md stays tracked
+.claude/settings.local.json
+CLAUDE.local.md
+
+# macOS / Windows OS files
+.DS_Store
+Thumbs.db
