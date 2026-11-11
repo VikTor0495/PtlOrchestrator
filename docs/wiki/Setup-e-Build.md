@@ -50,3 +50,11 @@ Provato: produce `PtlStation.exe` (~144 MB) e parte da solo. Accanto all'exe dev
 Alla prima esecuzione vengono creati `data/station.db` (coda eventi e cache operatori: **non cancellare** se ci sono eventi non ancora inviati) e `logs/station-AAAAMMGG.log`.
 
 Prima di usare la postazione: creare almeno un operatore con la chiave **Admin** (`POST /api/operators`), perché il login ha bisogno della cache operatori scaricata dal server.
+
+## Database di test su VM (PostgreSQL)
+Istanza di prova sulla VM `91.98.228.42`: Postgres 16.4 in container Docker `postgres` (porta 5432), condiviso con altri servizi.
+
+- Database: `ptl_test` · ruolo: `ptl_test` · password: `638335771e9cc6916c36430b194f919e76256a64`
+- Connection string: `Host=91.98.228.42;Port=5432;Database=ptl_test;Username=ptl_test;Password=638335771e9cc6916c36430b194f919e76256a64`
+- Schema: tabelle `operation_events`, `operators`, `stations`, `work_sessions`, `__EFMigrationsHistory` (migration `20261013201821_InitialCreate`), con grant SELECT/INSERT/UPDATE/DELETE per `ptl_test`.
+- Il DDL corrisponde a `dotnet ef migrations script --idempotent --project src/PtlOrchestrator.Api`.
