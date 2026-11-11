@@ -17,5 +17,7 @@ public enum OperationEventType
     WrongModulePressed,
     OperationTimedOut,
     PtlFault,
-    CartsReset
+    CartsReset,
+    CartCheckedIn,
+    CartReleased
 }

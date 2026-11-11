@@ -140,4 +140,51 @@ public class CartContainerTests
 
         Assert.Equal(["1", "2"], container.GetCarts().Select(c => c.CartId));
     }
+
+    [Fact]
+    public void WithoutActiveCarts_NoCartIsActiveAndProductsAreRejected()
+    {
+        var container = new CartContainer([CartFactory.CreateCart("1", "0001")], activeCartIds: []);
+
+        var result = container.AssignItem(BarcodeA, maxQuantity: 2);
+
+        Assert.False(result.Success);
+        Assert.Contains("check-in", result.Reason);
+        Assert.Empty(container.GetCarts());
+    }
+
+    [Fact]
+    public void CheckIn_ActivatesConfiguredCartOnce()
+    {
+        var container = new CartContainer([CartFactory.CreateCart("1", "0001")], activeCartIds: []);
+
+        Assert.Equal(CartCheckInResult.Done, container.CheckIn("1"));
+        Assert.Equal(CartCheckInResult.AlreadyActive, container.CheckIn("1"));
+        Assert.True(container.IsActive("1"));
+        Assert.Equal(["1"], container.GetCarts().Select(c => c.CartId));
+    }
+
+    [Fact]
+    public void CheckIn_OfUnknownCart_ChangesNothing()
+    {
+        var container = new CartContainer([CartFactory.CreateCart("1", "0001")], activeCartIds: []);
+
+        Assert.Equal(CartCheckInResult.Unknown, container.CheckIn("99"));
+        Assert.Empty(container.GetCarts());
+        Assert.False(container.IsKnownCart("99"));
+    }
+
+    [Fact]
+    public void AfterCheckIn_ProductsGoOnlyToActiveCarts()
+    {
+        var container = new CartContainer(
+            [CartFactory.CreateCart("1", "0001"), CartFactory.CreateCart("2", "0002")],
+            activeCartIds: []);
+        container.CheckIn("2");
+
+        var result = container.AssignItem(BarcodeA, maxQuantity: 2);
+
+        Assert.True(result.Success);
+        Assert.Equal("2", result.Cart!.CartId);
+    }
 }

@@ -82,17 +82,19 @@ public class CartManagerTests
     }
 
     [Fact]
-    public async Task ProcessBarcode_WhenNoBasketIsLeft_IsRejectedWithoutTouchingThePtl()
+    public async Task ProcessBarcode_WhenCartsAreFull_ClosesTheWorkAndAsksToRescan()
     {
         var context = new CartManagerTestContext(basketCount: 1, barcodeLimit: 1);
         context.Ptl.EnqueueButtonPresses(FirstBasket);
         await context.Manager.ProcessBarcode(Barcode, CancellationToken.None);
-        var commandsBefore = context.Ptl.SentCommands.Count;
 
         var result = await context.Manager.ProcessBarcode(Barcode, CancellationToken.None);
 
+        // carrelli pieni: report CSV, azzeramento e richiesta di riscansionare il prodotto
         Assert.False(result.Success);
-        Assert.Equal(commandsBefore, context.Ptl.SentCommands.Count);
+        Assert.Contains("Riscansiona", result.Reason);
+        Assert.Equal(1, context.ReportWriter.WriteCalls);
+        Assert.Empty(context.Container.GetCarts().SelectMany(c => c.GetBaskets).Where(b => !b.IsEmpty));
     }
 
     [Fact]

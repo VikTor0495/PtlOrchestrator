@@ -15,6 +15,7 @@ public sealed class CentralOptions
     public int TimeoutSeconds { get; set; } = 15;
     public int EventSyncIntervalSeconds { get; set; } = 5;
     public int OperatorSyncIntervalSeconds { get; set; } = 60;
+    public int CartCatalogSyncIntervalSeconds { get; set; } = 60;
     public int EventBatchSize { get; set; } = 200;
 }
 

@@ -32,6 +32,18 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 3.3 Export CSV dei turni (`GET /api/sessions/export`)
 - [x] 3.4 Dockerfile + compose (Api + PostgreSQL), health check `/health` — **da provare**, Docker assente sul PC di sviluppo
 
+## Fase 5 — Flusso operatore (in corso)
+- [x] 5.1 Login con codice operatore digitato a mano (stesso percorso del badge; PIN e lista operatori tolti dalla schermata)
+- [x] 5.2 Check-in carrelli: il turno parte con zero carrelli attivi. Il carrello si identifica con il suo numero seriale (`1`, `2`…); il check-in lo occupa sul server (`POST /api/carts/{codice}/checkin`), che lo censisce con IP, porta e cestelli e rifiuta un carrello già occupato da un'altra postazione (`CartCheckedIn` nel log)
+- [x] 5.3 Check-in durante lo sventagliamento: stessa scansione/input, con turno attivo (test `ScanDispatcherTests`)
+- [x] 5.4 Chiusura: pulsante "Chiudi sventagliamento" (CSV + azzeramento, carrelli restano del turno). Automatica quando un prodotto non trova più spazio
+- [x] 5.5 Logout: rifiutato se ci sono prodotti nei carrelli; altrimenti libera i carrelli sul server e azzera l'interfaccia
+- [x] 5.6 Più controller: ogni carrello ha il proprio IP:porta (dal server); pool di connessioni per endpoint; comandi e attesa pulsanti instradati al controller del carrello. Carrello vuoto rimovibile dalla GUI (`CartReleased`)
+- [x] 5.7 Impostazioni nella GUI, salvate in SQLite locale (`app_settings`) con storico (`app_settings_history`); valgono dal riavvio
+- [x] 5.9 Identificativo postazione: `Station:StationId` se configurato, altrimenti derivato dal `MachineGuid` di Windows (stabile tra reinstallazioni dell'app); la postazione si registra sul server al primo contatto
+- [x] 5.10 Server: tabelle `carts`, `cart_baskets`, `cart_assignments` (indice univoco parziale sui carrelli aperti), migration `AddCartAssignments`, DDL `database/postgres/002_carrelli_e_assegnazioni.sql`. Verificato su Postgres: 10 postazioni in simultanea sullo stesso carrello → una sola 200, nove 409
+- [x] 5.8 Icona dell'eseguibile Station (`assets/PTL-Orchestrator.ico`, in `ApplicationIcon` e nella finestra)
+
 ## Fase 4 — Chiusura
 - [ ] 4.1 **Decisione aperta**: la Console resta com'è (storica, senza operatori né DB). Migrarla su `AddPtlCore` ne cambierebbe il comportamento (login obbligatorio). Proposta: dismetterla dopo la validazione sul campo della Station
 - [x] 4.2 Contratto client Station ↔ Api provato end-to-end (`StationClientContractTests`: invio, duplicati, rifiuti, chiave errata, sync incrementale operatori). Manca un test con la GUI e la porta seriale reali: richiede hardware

@@ -18,6 +18,9 @@ public class PtlDbContext : DbContext
     public DbSet<StationEntity> Stations => Set<StationEntity>();
     public DbSet<WorkSessionEntity> WorkSessions => Set<WorkSessionEntity>();
     public DbSet<OperationEventEntity> OperationEvents => Set<OperationEventEntity>();
+    public DbSet<CartEntity> Carts => Set<CartEntity>();
+    public DbSet<CartBasketEntity> CartBaskets => Set<CartBasketEntity>();
+    public DbSet<CartAssignmentEntity> CartAssignments => Set<CartAssignmentEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

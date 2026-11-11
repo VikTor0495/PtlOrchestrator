@@ -21,37 +21,40 @@ public sealed class PtlLifecycleServiceTests
 
     private sealed class FakeConnection(Steps steps) : ILightstepConnectionService
     {
-        public bool IsConnected { get; set; }
-        public int FailuresBeforeSuccess { get; set; }
+        public bool IsConnected => false;
 
-        public Task EnsureConnectedAsync(CancellationToken ct)
-        {
-            steps.Log.Add("connect");
-            if (FailuresBeforeSuccess > 0)
-            {
-                FailuresBeforeSuccess--;
-                throw new IOException("controller non raggiungibile");
-            }
+        public bool IsConnectedTo(PtlEndpoint endpoint) => false;
 
-            IsConnected = true;
-            return Task.CompletedTask;
-        }
+        public Task EnsureConnectedAsync(CancellationToken ct) => throw new NotSupportedException();
 
-        public EthernetController GetController() => throw new NotSupportedException();
+        public Task EnsureConnectedAsync(PtlEndpoint endpoint, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<bool> TryConnectAsync(PtlEndpoint endpoint, CancellationToken ct) => throw new NotSupportedException();
+
+        public EthernetController GetController(PtlEndpoint? endpoint = null) => throw new NotSupportedException();
 
         public void Disconnect()
         {
             steps.Log.Add("disconnect");
-            IsConnected = false;
         }
+
+        public void Disconnect(PtlEndpoint endpoint) => Disconnect();
     }
 
     private sealed class FakeLimits(Steps steps) : IBasketLimitService
     {
+        public int FailuresBeforeSuccess { get; set; }
+
         public string? LoadedPath { get; private set; }
 
         public void Load(string csvPath, CancellationToken cancellationToken)
         {
+            if (FailuresBeforeSuccess > 0)
+            {
+                FailuresBeforeSuccess--;
+                throw new IOException("file limiti non leggibile");
+            }
+
             LoadedPath = csvPath;
             steps.Log.Add("limits");
         }
@@ -64,7 +67,21 @@ public sealed class PtlLifecycleServiceTests
     {
         public bool ThrowOnReport { get; set; }
 
+        public List<string> ActiveCarts { get; } = [];
+
         public Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public bool IsKnownCart(string code) => false;
+
+        public Task<CartCheckInOutcome> CheckInAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public IReadOnlyList<string> ActiveCartIds() => ActiveCarts;
+
+        public bool HasItems() => false;
+
+        public Task CloseWorkAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task ResetAll(CancellationToken cancellationToken)
         {
@@ -124,12 +141,12 @@ public sealed class PtlLifecycleServiceTests
     }
 
     [Fact]
-    public async Task Start_ConnectsLoadsLimitsAndResetsInOrder_ThenBecomesReady()
+    public async Task Start_LoadsLimitsAndResets_WithoutConnectingAnyController()
     {
         await _service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => _service.IsReady);
 
-        Assert.Equal(["connect", "limits", "reset"], _steps.Log);
+        Assert.Equal(["limits", "reset"], _steps.Log);
         Assert.Equal(Path.Combine(AppContext.BaseDirectory, "limiti.csv"), _limits.LoadedPath);
 
         await _service.StopAsync(CancellationToken.None);
@@ -138,12 +155,11 @@ public sealed class PtlLifecycleServiceTests
     [Fact]
     public async Task WhileInitializing_SystemIsBusy_AndIsReleasedWhenReady()
     {
-        _connection.FailuresBeforeSuccess = 1;
+        _limits.FailuresBeforeSuccess = 1;
 
         await _service.StartAsync(CancellationToken.None);
-        await WaitUntilAsync(() => _steps.Log.Count == 1);
+        await WaitUntilAsync(() => _processing.IsBusy);
 
-        Assert.True(_processing.IsBusy);
         Assert.False(_service.IsReady);
 
         await AdvanceUntilAsync(() => _service.IsReady);
@@ -156,21 +172,22 @@ public sealed class PtlLifecycleServiceTests
     [Fact]
     public async Task FailedInitialization_IsRetriedAfterTheDelay()
     {
-        _connection.FailuresBeforeSuccess = 2;
+        _limits.FailuresBeforeSuccess = 2;
 
         await _service.StartAsync(CancellationToken.None);
         await AdvanceUntilAsync(() => _service.IsReady);
 
-        Assert.Equal(3, _steps.Log.Count(s => s == "connect"));
+        Assert.Equal(1, _steps.Log.Count(s => s == "limits"));
 
         await _service.StopAsync(CancellationToken.None);
     }
 
     [Fact]
-    public async Task Stop_WritesReportResetsCartsAndDisconnects()
+    public async Task Stop_WithActiveCarts_WritesReportResetsAndDisconnects()
     {
         await _service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => _service.IsReady);
+        _carts.ActiveCarts.Add("1");
         _steps.Log.Clear();
 
         await _service.StopAsync(CancellationToken.None);
@@ -180,7 +197,19 @@ public sealed class PtlLifecycleServiceTests
     }
 
     [Fact]
-    public async Task Stop_ReportFailure_StillResetsAndDisconnects()
+    public async Task Stop_WithoutActiveCarts_WritesReportAndDisconnectsWithoutReset()
+    {
+        await _service.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => _service.IsReady);
+        _steps.Log.Clear();
+
+        await _service.StopAsync(CancellationToken.None);
+
+        Assert.Equal(["report", "disconnect"], _steps.Log);
+    }
+
+    [Fact]
+    public async Task Stop_ReportFailure_StillDisconnects()
     {
         await _service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => _service.IsReady);
@@ -189,20 +218,6 @@ public sealed class PtlLifecycleServiceTests
 
         await _service.StopAsync(CancellationToken.None);
 
-        Assert.Equal(["report", "reset", "disconnect"], _steps.Log);
-    }
-
-    [Fact]
-    public async Task Stop_BeforePtlWasEverConnected_DoesNotTryToResetOrHang()
-    {
-        _connection.FailuresBeforeSuccess = int.MaxValue;
-
-        await _service.StartAsync(CancellationToken.None);
-        await WaitUntilAsync(() => _steps.Log.Count == 1);
-
-        await _service.StopAsync(CancellationToken.None);
-
-        Assert.DoesNotContain("reset", _steps.Log);
-        Assert.False(_processing.IsBusy);
+        Assert.Contains("disconnect", _steps.Log);
     }
 }

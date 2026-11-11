@@ -18,15 +18,8 @@ public class PtlCoreRegistrationTests
     private static Dictionary<string, string?> ValidConfiguration() => new()
     {
         ["Station:StationId"] = "ST-01",
-        ["Lightstep:ControllerIp"] = "192.168.1.9",
-        ["Lightstep:ControllerPort"] = "15003",
         ["LimitBarcode:FileName"] = "prodotti_config.csv",
-        ["ProcessTimeout:Minutes"] = "5",
-        ["Carts:0:CartId"] = "1",
-        ["Carts:0:Baskets:0:BasketId"] = "0001",
-        ["Carts:0:Baskets:1:BasketId"] = "0002",
-        ["Carts:1:CartId"] = "2",
-        ["Carts:1:Baskets:0:BasketId"] = "0003"
+        ["ProcessTimeout:Minutes"] = "5"
     };
 
     private static ServiceProvider BuildProvider(Dictionary<string, string?> settings)
@@ -56,6 +49,7 @@ public class PtlCoreRegistrationTests
     [InlineData(typeof(IBasketLimitService))]
     [InlineData(typeof(IPtlCommandService))]
     [InlineData(typeof(ILightstepConnectionService))]
+    [InlineData(typeof(ICartAssignmentClient))]
     [InlineData(typeof(CartContainer))]
     public void EveryCoreServiceCanBeResolved(Type serviceType)
     {
@@ -76,16 +70,14 @@ public class PtlCoreRegistrationTests
     }
 
     [Fact]
-    public void CartContainer_IsBuiltFromTheConfiguredCartsAndBaskets()
+    public void CartContainer_StartsWithoutActiveCarts()
     {
         using var provider = BuildProvider(ValidConfiguration());
 
-        var carts = provider.GetRequiredService<CartContainer>().GetCarts().ToList();
+        // i carrelli arrivano dal server al check-in: il turno parte da zero
+        var container = provider.GetRequiredService<CartContainer>();
 
-        Assert.Equal(["1", "2"], carts.Select(c => c.CartId));
-        Assert.Equal(["0001", "0002"], carts[0].GetBaskets.Select(b => b.BasketId));
-        Assert.Equal(["0003"], carts[1].GetBaskets.Select(b => b.BasketId));
-        Assert.All(carts.SelectMany(c => c.GetBaskets), basket => Assert.True(basket.IsEmpty));
+        Assert.Empty(container.GetCarts());
     }
 
     [Fact]
@@ -94,8 +86,6 @@ public class PtlCoreRegistrationTests
         using var provider = BuildProvider(ValidConfiguration());
 
         Assert.Equal("ST-01", provider.GetRequiredService<IOptions<StationOptions>>().Value.StationId);
-        Assert.Equal("192.168.1.9", provider.GetRequiredService<IOptions<LightstepOptions>>().Value.ControllerIp);
-        Assert.Equal(15003, provider.GetRequiredService<IOptions<LightstepOptions>>().Value.ControllerPort);
         Assert.Equal(5, provider.GetRequiredService<IOptions<TimeoutOptions>>().Value.Minutes);
     }
 
@@ -120,12 +110,9 @@ public class PtlCoreRegistrationTests
     {
         { "Station:StationId", "" },
         { "Station:StationId", null },
-        { "Lightstep:ControllerIp", "" },
-        { "Lightstep:ControllerPort", "0" },
         { "LimitBarcode:FileName", "" },
         { "ProcessTimeout:Minutes", "0" },
         { "ProcessTimeout:Minutes", "-3" },
-        { "Carts:0:CartId", "" },
     };
 
     [Theory]
@@ -139,53 +126,10 @@ public class PtlCoreRegistrationTests
         var exception = Record.Exception(() =>
         {
             _ = provider.GetRequiredService<IOptions<StationOptions>>().Value;
-            _ = provider.GetRequiredService<IOptions<LightstepOptions>>().Value;
             _ = provider.GetRequiredService<IOptions<BarcodeLimitOptions>>().Value;
             _ = provider.GetRequiredService<IOptions<TimeoutOptions>>().Value;
-            _ = provider.GetRequiredService<IOptions<List<CartOptions>>>().Value;
         });
 
         Assert.IsType<OptionsValidationException>(exception);
-    }
-
-    [Fact]
-    public void DuplicatedBasketIdsAcrossCarts_AreRejected()
-    {
-        var settings = ValidConfiguration();
-        settings["Carts:1:Baskets:0:BasketId"] = "0001";
-        using var provider = BuildProvider(settings);
-
-        var exception = Assert.Throws<OptionsValidationException>(
-            () => provider.GetRequiredService<CartContainer>());
-
-        Assert.Contains("univoci", exception.Message);
-    }
-
-    [Fact]
-    public void CartsWithoutBaskets_AreRejected()
-    {
-        var settings = ValidConfiguration()
-            .Where(pair => !pair.Key.StartsWith("Carts:1:Baskets"))
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
-        using var provider = BuildProvider(settings);
-
-        var exception = Assert.Throws<OptionsValidationException>(
-            () => provider.GetRequiredService<CartContainer>());
-
-        Assert.Contains("almeno una cesta", exception.Message);
-    }
-
-    [Fact]
-    public void MissingCarts_AreRejected()
-    {
-        var settings = ValidConfiguration()
-            .Where(pair => !pair.Key.StartsWith("Carts:"))
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
-        using var provider = BuildProvider(settings);
-
-        var exception = Assert.Throws<OptionsValidationException>(
-            () => provider.GetRequiredService<CartContainer>());
-
-        Assert.Contains("almeno un carrello", exception.Message);
     }
 }

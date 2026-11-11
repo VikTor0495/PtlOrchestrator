@@ -2,6 +2,7 @@ using AioiSystems.Lightstep;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Configuration;
+using PtlOrchestrator.Domain;
 
 namespace PtlOrchestrator.Service;
 
@@ -10,75 +11,107 @@ public sealed class LightstepConnectionService(
     ILogger<LightstepConnectionService> logger
 ) : ILightstepConnectionService
 {
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(10);
+
     private readonly LightstepOptions _options = options.Value;
     private readonly ILogger<LightstepConnectionService> _logger = logger;
-    private EthernetController? _controller;
+    private readonly Dictionary<PtlEndpoint, EthernetController> _pool = [];
+    private readonly object _gate = new();
 
-    public bool IsConnected => _controller?.IsConnected == true;
-
-    public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
+    public bool IsConnected
     {
-    
-        if (IsConnected)
-            return;
-
-        EthernetController controller;
-
-        while (!IsConnected)
+        get
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-
-                if (IsConnected)
-                    return;
-
-                _logger.LogInformation(
-                    "Tentativo connessione al Controller PTL {Ip}:{Port}",
-                    _options.ControllerIp,
-                    _options.ControllerPort);
-
-                controller = new EthernetController();
-                controller.SetLicense(_options.LicenzeKey);
-
-                controller.Connect(
-                    _options.ControllerIp,
-                    _options.ControllerPort);
-
-                _controller = controller;
-
-                _logger.LogInformation("Controller PTL connesso correttamente");
-                return;
-            }
-            catch (Exception)
-            {
-                _logger.LogWarning(
-                    "Connessione al Controller PTL fallita. Nuovo tentativo tra 10 secondi...");
-                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-            }
+            lock (_gate)
+                return _pool.Count > 0 && _pool.Values.All(c => c.IsConnected);
         }
     }
 
-    public EthernetController GetController()
+    public bool IsConnectedTo(PtlEndpoint endpoint)
     {
-        if (!IsConnected || _controller == null)
-            throw new InvalidOperationException(
-                "Controller PTL non connesso");
+        lock (_gate)
+            return _pool.TryGetValue(endpoint, out var controller) && controller.IsConnected;
+    }
 
-        return _controller;
+    public Task EnsureConnectedAsync(CancellationToken cancellationToken)
+        => EnsureConnectedAsync(DefaultEndpoint(), cancellationToken);
+
+    public async Task EnsureConnectedAsync(PtlEndpoint endpoint, CancellationToken cancellationToken)
+    {
+        while (!IsConnectedTo(endpoint))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (await TryConnectAsync(endpoint, cancellationToken))
+                return;
+
+            _logger.LogWarning("Connessione al Controller PTL {Endpoint} fallita. Nuovo tentativo tra {Seconds} secondi...",
+                endpoint, RetryDelay.TotalSeconds);
+            await Task.Delay(RetryDelay, cancellationToken);
+        }
+    }
+
+    public Task<bool> TryConnectAsync(PtlEndpoint endpoint, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (IsConnectedTo(endpoint))
+            return Task.FromResult(true);
+
+        _logger.LogInformation("Tentativo connessione al Controller PTL {Endpoint}", endpoint);
+
+        try
+        {
+            var controller = new EthernetController();
+            controller.SetLicense(_options.LicenzeKey);
+            controller.Connect(endpoint.Ip, endpoint.Port);
+
+            lock (_gate)
+                _pool[endpoint] = controller;
+
+            _logger.LogInformation("Controller PTL {Endpoint} connesso", endpoint);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Controller PTL {Endpoint} non raggiungibile", endpoint);
+            return Task.FromResult(false);
+        }
+    }
+
+    public EthernetController GetController(PtlEndpoint? endpoint = null)
+    {
+        var target = endpoint ?? DefaultEndpoint();
+
+        lock (_gate)
+        {
+            if (_pool.TryGetValue(target, out var controller) && controller.IsConnected)
+                return controller;
+        }
+
+        throw new InvalidOperationException($"Controller PTL {target} non connesso");
     }
 
     public void Disconnect()
     {
+        List<PtlEndpoint> endpoints;
+        lock (_gate)
+            endpoints = [.. _pool.Keys];
 
-        var controller = _controller;
-        if (controller == null)
-            return;
+        foreach (var endpoint in endpoints)
+            Disconnect(endpoint);
+    }
 
-        _logger.LogInformation("Disconnessione Controller PTL");
+    public void Disconnect(PtlEndpoint endpoint)
+    {
+        EthernetController? controller;
+        lock (_gate)
+        {
+            if (!_pool.Remove(endpoint, out controller))
+                return;
+        }
 
-        _controller = null;
+        _logger.LogInformation("Disconnessione Controller PTL {Endpoint}", endpoint);
 
         _ = Task.Run(() =>
         {
@@ -88,11 +121,16 @@ public sealed class LightstepConnectionService(
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    ex,
-                    "Errore durante disconnessione Controller PTL");
+                _logger.LogWarning(ex, "Errore durante disconnessione Controller PTL {Endpoint}", endpoint);
             }
         });
     }
 
+    private PtlEndpoint DefaultEndpoint()
+    {
+        if (string.IsNullOrWhiteSpace(_options.ControllerIp) || _options.ControllerPort <= 0)
+            throw new InvalidOperationException("Nessun controller PTL predefinito configurato");
+
+        return new PtlEndpoint(_options.ControllerIp, _options.ControllerPort);
+    }
 }

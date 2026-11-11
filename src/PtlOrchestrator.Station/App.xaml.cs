@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PtlOrchestrator.Station.Presentation;
+using PtlOrchestrator.Station.Storage;
 using Serilog;
 
 namespace PtlOrchestrator.Station;
@@ -28,6 +29,12 @@ public partial class App : Application
                     Path.Combine(AppContext.BaseDirectory, "logs", "station-.log"),
                     rollingInterval: RollingInterval.Day,
                     retainedFileCountLimit: 30));
+
+            // impostazioni salvate dalla GUI: sovrascrivono appsettings.json (le modifiche valgono dal riavvio)
+            var databasePath = Path.GetFullPath(
+                builder.Configuration["LocalData:DatabasePath"] ?? Path.Combine("data", "station.db"),
+                AppContext.BaseDirectory);
+            builder.Configuration.AddInMemoryCollection(SettingsStore.ReadAll(databasePath));
 
             builder.Services.AddStation(builder.Configuration);
 

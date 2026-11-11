@@ -61,7 +61,7 @@ public class CartManagerOperationEventsTests
     }
 
     [Fact]
-    public async Task ProcessBarcode_WhenNoBasketIsLeft_RecordsRejection()
+    public async Task ProcessBarcode_WhenNoBasketIsLeft_RecordsRejectionThenTheReset()
     {
         var context = new CartManagerTestContext(basketCount: 1, barcodeLimit: 1);
         context.Ptl.EnqueueButtonPresses(FirstBasket);
@@ -70,8 +70,10 @@ public class CartManagerOperationEventsTests
 
         await context.Manager.ProcessBarcode(Barcode, CancellationToken.None);
 
-        var rejected = Assert.Single(context.Recorder.Recorded);
-        Assert.Equal(OperationEventType.BarcodeRejected, rejected.Type);
+        // il rifiuto del prodotto, poi l'azzeramento dovuto alla chiusura automatica dello sventagliamento
+        Assert.Equal(
+            [OperationEventType.BarcodeRejected, OperationEventType.CartsReset],
+            context.Recorder.Recorded.Select(e => e.Type));
     }
 
     [Fact]

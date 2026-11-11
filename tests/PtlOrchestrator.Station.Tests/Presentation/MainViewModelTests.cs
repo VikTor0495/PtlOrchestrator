@@ -2,9 +2,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Configuration;
 using PtlOrchestrator.Contracts.Operations;
-using PtlOrchestrator.Contracts.Operators;
 using PtlOrchestrator.Domain;
 using PtlOrchestrator.Domain.Operations;
+using PtlOrchestrator.Manager;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Service.Impl;
 using PtlOrchestrator.Station.Presentation;
@@ -28,19 +28,17 @@ public sealed class MainViewModelTests : IDisposable
     {
         public LoginResult NextLogin { get; set; } = LoginResult.Failed(LoginFailure.UnknownOperator);
         public LogoutResult NextLogout { get; set; } = LogoutResult.Done;
-        public (Guid OperatorId, string Pin)? LastPinLogin { get; private set; }
 
         public Task<LoginResult> LoginWithBadgeAsync(string badgeCode, CancellationToken cancellationToken)
-            => throw new NotSupportedException();
-
-        public Task<LoginResult> LoginWithPinAsync(Guid operatorId, string pin, CancellationToken cancellationToken)
         {
-            LastPinLogin = (operatorId, pin);
             if (NextLogin.Success)
                 sessionContext.Begin(NextLogin.Session!);
 
             return Task.FromResult(NextLogin);
         }
+
+        public Task<LoginResult> LoginWithPinAsync(Guid operatorId, string pin, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
 
         public Task<LogoutResult> LogoutAsync(CancellationToken cancellationToken)
         {
@@ -51,22 +49,64 @@ public sealed class MainViewModelTests : IDisposable
         }
     }
 
-    private sealed class FakeDirectory : IOperatorDirectory
+    private sealed class FakeScanDispatcher : IScanDispatcher
     {
-        public List<OperatorDto> Operators { get; } = [];
+        public List<string> Submitted { get; } = [];
+        public ScanOutcome NextOutcome { get; set; } = ScanOutcome.Ignored();
 
-        public Task<OperatorDto?> FindByBadgeAsync(string badgeCode, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<ScanOutcome> DispatchAsync(string scannedCode, CancellationToken cancellationToken)
+        {
+            Submitted.Add(scannedCode);
+            return Task.FromResult(NextOutcome);
+        }
+    }
 
-        public Task<OperatorDto?> FindByIdAsync(Guid operatorId, CancellationToken cancellationToken) => throw new NotSupportedException();
+    private sealed class FakeCartManager : ICartManager
+    {
+        public bool Items { get; set; }
+        public List<string> Active { get; } = [];
+        public List<string> Released { get; } = [];
+        public bool ReleaseFails { get; set; }
+        public int CloseCount { get; private set; }
 
-        public Task<IReadOnlyList<OperatorDto>> GetActiveAsync(CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<OperatorDto>>(Operators.ToList());
+        public Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public bool IsKnownCart(string code) => false;
+
+        public Task<CartCheckInOutcome> CheckInAsync(string cartCode, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartCode, CancellationToken cancellationToken)
+        {
+            if (ReleaseFails)
+                return Task.FromResult(new CartReleaseOutcome(false, $"Rilascio di {cartCode} non riuscito"));
+
+            Released.Add(cartCode);
+            Active.Remove(cartCode);
+            return Task.FromResult(new CartReleaseOutcome(true, $"Carrello {cartCode} rimosso"));
+        }
+
+        public IReadOnlyList<string> ActiveCartIds() => [.. Active];
+
+        public bool HasItems() => Items;
+
+        public Task CloseWorkAsync(CancellationToken cancellationToken)
+        {
+            CloseCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task ResetAll(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void ShowStatus() { }
+
+        public void WriteCsvReport() { }
     }
 
     private readonly FakeScanActivity _scans = new();
     private readonly OperatorSessionContext _session = new();
     private readonly FakeLoginService _login;
-    private readonly FakeDirectory _directory = new();
+    private readonly FakeScanDispatcher _dispatcher = new();
+    private readonly FakeCartManager _cartManager = new();
     private readonly FakeOutbox _outbox = new();
     private readonly FakeLightstep _lightstep = new();
     private readonly CartContainer _carts = new([new Cart("1", [new Basket("0001", 0), new Basket("0002", 0)])]);
@@ -76,14 +116,12 @@ public sealed class MainViewModelTests : IDisposable
     {
         _login = new FakeLoginService(_session);
         _viewModel = new MainViewModel(
-            _scans, _session, _login, _directory, _outbox, _lightstep, _carts,
+            _scans, _session, _login, _dispatcher, _cartManager, _outbox, _lightstep, _carts,
             Options.Create(new StationOptions { StationId = "ST-TEST" }),
             new ImmediateDispatcher(), TimeProvider.System, NullLogger<MainViewModel>.Instance);
     }
 
     public void Dispose() => _viewModel.Dispose();
-
-    private static OperatorDto Operator(string name = "Mario") => new(Guid.NewGuid(), name, "B1", "hash", true, DateTimeOffset.UtcNow);
 
     private static OperatorSession Session(string name = "Mario") => new(Guid.NewGuid(), Guid.NewGuid(), name, DateTimeOffset.UtcNow);
 
@@ -94,9 +132,8 @@ public sealed class MainViewModelTests : IDisposable
         Assert.False(_viewModel.IsLoggedIn);
         Assert.True(_viewModel.IsLoggedOut);
         Assert.Null(_viewModel.OperatorName);
-        var cart = Assert.Single(_viewModel.Carts);
-        Assert.All(cart.Baskets, b => Assert.True(b.IsEmpty));
         Assert.False(_viewModel.LogoutCommand.CanExecute(null));
+        Assert.False(_viewModel.CloseWorkCommand.CanExecute(null));
     }
 
     [Fact]
@@ -149,13 +186,11 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task RefreshStatus_PublishesQueueCountsPtlStateAndOperators()
+    public async Task RefreshStatus_PublishesQueueCountsAndPtlState()
     {
         _outbox.Pending = 4;
         _outbox.Quarantined = 1;
         _lightstep.IsConnected = true;
-        _directory.Operators.Add(Operator("Anna"));
-        _directory.Operators.Add(Operator("Bruno"));
 
         await _viewModel.RefreshStatusAsync(CancellationToken.None);
 
@@ -163,84 +198,87 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal(1, _viewModel.QuarantinedEvents);
         Assert.True(_viewModel.HasQuarantinedEvents);
         Assert.True(_viewModel.IsPtlConnected);
-        Assert.Equal(["Anna", "Bruno"], _viewModel.AvailableOperators.Select(o => o.Name));
     }
 
     [Fact]
-    public async Task RefreshStatus_KeepsSelectedOperatorWhenListChanges()
+    public void SubmitCode_RequiresNonBlankInput()
     {
-        var anna = Operator("Anna");
-        _directory.Operators.Add(anna);
-        await _viewModel.RefreshStatusAsync(CancellationToken.None);
-        _viewModel.SelectedOperator = _viewModel.AvailableOperators[0];
+        Assert.False(_viewModel.SubmitCodeCommand.CanExecute(null));
 
-        _directory.Operators.Add(Operator("Bruno"));
-        await _viewModel.RefreshStatusAsync(CancellationToken.None);
+        _viewModel.CodeInput = "   ";
+        Assert.False(_viewModel.SubmitCodeCommand.CanExecute(null));
 
-        Assert.Equal(anna.Id, _viewModel.SelectedOperator?.Id);
+        _viewModel.CodeInput = "OP001";
+        Assert.True(_viewModel.SubmitCodeCommand.CanExecute(null));
     }
 
     [Fact]
-    public async Task PinLogin_RequiresOperatorAndPin()
+    public async Task SubmitCode_SendsTheTrimmedCodeAsIfScanned_AndClearsTheInput()
     {
-        _directory.Operators.Add(Operator());
-        await _viewModel.RefreshStatusAsync(CancellationToken.None);
-
-        Assert.False(_viewModel.LoginWithPinCommand.CanExecute(null));
-
-        _viewModel.SelectedOperator = _viewModel.AvailableOperators[0];
-        Assert.False(_viewModel.LoginWithPinCommand.CanExecute(null));
-
-        _viewModel.Pin = "1234";
-        Assert.True(_viewModel.LoginWithPinCommand.CanExecute(null));
-    }
-
-    [Fact]
-    public async Task PinLogin_Success_StartsTurnAndClearsPin()
-    {
-        var anna = Operator("Anna");
-        _directory.Operators.Add(anna);
-        await _viewModel.RefreshStatusAsync(CancellationToken.None);
-        _viewModel.SelectedOperator = _viewModel.AvailableOperators[0];
-        _viewModel.Pin = "1234";
+        _viewModel.CodeInput = "  OP001 ";
+        _dispatcher.NextOutcome = ScanOutcome.OperatorLoggedIn(Session("Anna"));
         _login.NextLogin = LoginResult.Succeeded(Session("Anna"));
 
-        await _viewModel.LoginWithPinCommand.ExecuteAsync(null);
+        await _viewModel.SubmitCodeCommand.ExecuteAsync(null);
 
-        Assert.Equal((anna.Id, "1234"), _login.LastPinLogin);
-        Assert.True(_viewModel.IsLoggedIn);
-        Assert.Equal("Anna", _viewModel.OperatorName);
-        Assert.Equal(string.Empty, _viewModel.Pin);
+        Assert.Equal(["OP001"], _dispatcher.Submitted);
+        Assert.Equal(string.Empty, _viewModel.CodeInput);
+        Assert.Equal("OP001", _viewModel.LastScanCode);
+        Assert.Equal(MessageSeverity.Success, _viewModel.LastMessage.Severity);
     }
 
     [Fact]
-    public async Task PinLogin_WrongPin_ShowsErrorAndClearsPin()
+    public async Task SubmitCode_CartCheckInRejected_ShowsItsMessageAsWarning()
     {
-        _directory.Operators.Add(Operator());
-        await _viewModel.RefreshStatusAsync(CancellationToken.None);
-        _viewModel.SelectedOperator = _viewModel.AvailableOperators[0];
-        _viewModel.Pin = "0000";
-        _login.NextLogin = LoginResult.Failed(LoginFailure.InvalidPin);
+        _session.Begin(Session());
+        _viewModel.CodeInput = "2";
+        _dispatcher.NextOutcome = ScanOutcome.CartCheckInRejected("Carrello 2 già in uso dalla postazione ST-02");
 
-        await _viewModel.LoginWithPinCommand.ExecuteAsync(null);
+        await _viewModel.SubmitCodeCommand.ExecuteAsync(null);
 
-        Assert.False(_viewModel.IsLoggedIn);
-        Assert.Equal(string.Empty, _viewModel.Pin);
-        Assert.Equal(MessageSeverity.Error, _viewModel.LastMessage.Severity);
-        Assert.Contains("PIN", _viewModel.LastMessage.Text);
+        Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+        Assert.Contains("ST-02", _viewModel.LastMessage.Text);
     }
 
     [Fact]
-    public async Task Logout_EndsTurn()
+    public async Task Logout_WithProductsInCarts_IsRefusedAndKeepsTheTurn()
     {
         _session.Begin(Session());
         _scans.Raise("X", ScanOutcome.Ignored());
-        Assert.True(_viewModel.IsLoggedIn);
+        _cartManager.Items = true;
 
         await _viewModel.LogoutCommand.ExecuteAsync(null);
 
+        Assert.True(_viewModel.IsLoggedIn);
+        Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+    }
+
+    [Fact]
+    public async Task Logout_ReleasesEveryActiveCartThenEndsTurn()
+    {
+        _session.Begin(Session());
+        _scans.Raise("X", ScanOutcome.Ignored());
+        _cartManager.Active.AddRange(["1", "2"]);
+
+        await _viewModel.LogoutCommand.ExecuteAsync(null);
+
+        Assert.Equal(["1", "2"], _cartManager.Released);
         Assert.False(_viewModel.IsLoggedIn);
         Assert.Null(_viewModel.OperatorName);
+    }
+
+    [Fact]
+    public async Task Logout_WhenACartCannotBeReleased_KeepsTheTurn()
+    {
+        _session.Begin(Session());
+        _scans.Raise("X", ScanOutcome.Ignored());
+        _cartManager.Active.Add("1");
+        _cartManager.ReleaseFails = true;
+
+        await _viewModel.LogoutCommand.ExecuteAsync(null);
+
+        Assert.True(_viewModel.IsLoggedIn);
+        Assert.Equal(MessageSeverity.Error, _viewModel.LastMessage.Severity);
     }
 
     [Fact]
@@ -254,6 +292,30 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.True(_viewModel.IsLoggedIn);
         Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+    }
+
+    [Fact]
+    public async Task CloseWork_GeneratesReportAndShowsSuccess()
+    {
+        _session.Begin(Session());
+        _scans.Raise("X", ScanOutcome.Ignored());
+
+        await _viewModel.CloseWorkCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, _cartManager.CloseCount);
+        Assert.Equal(MessageSeverity.Success, _viewModel.LastMessage.Severity);
+        Assert.True(_viewModel.IsLoggedIn);
+    }
+
+    [Fact]
+    public async Task RemoveCart_ReleasesItAndShowsTheOutcome()
+    {
+        _cartManager.Active.Add("1");
+
+        await _viewModel.RemoveCartCommand.ExecuteAsync("1");
+
+        Assert.Equal(["1"], _cartManager.Released);
+        Assert.Equal(MessageSeverity.Success, _viewModel.LastMessage.Severity);
     }
 
     [Fact]

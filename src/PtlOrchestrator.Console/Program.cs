@@ -61,6 +61,8 @@ builder.Services.Configure<TimeoutOptions>(
 
 // Registra servizi applicativi
 builder.Services.AddSingleton<ICartManager, CartManager>();
+// il Console legacy non usa il server carrelli: tutti i carrelli configurati restano attivi
+builder.Services.AddSingleton<ICartAssignmentClient, NoCartAssignmentClient>();
 builder.Services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
 builder.Services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
 builder.Services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();

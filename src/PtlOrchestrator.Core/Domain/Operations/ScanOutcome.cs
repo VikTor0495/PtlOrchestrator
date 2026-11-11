@@ -8,7 +8,9 @@ public enum ScanOutcomeKind
     SystemBusy,
     ProductAccepted,
     ProductRejected,
-    ProcessingFailed
+    ProcessingFailed,
+    CartCheckedIn,
+    CartCheckInRejected
 }
 
 /// <summary>
@@ -57,4 +59,10 @@ public sealed class ScanOutcome
 
     public static ScanOutcome ProcessingFailed(string message)
         => new(ScanOutcomeKind.ProcessingFailed, message);
+
+    public static ScanOutcome CartCheckedIn(string message)
+        => new(ScanOutcomeKind.CartCheckedIn, message);
+
+    public static ScanOutcome CartCheckInRejected(string message)
+        => new(ScanOutcomeKind.CartCheckInRejected, message);
 }

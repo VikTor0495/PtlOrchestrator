@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>PtlStation</AssemblyName>
     <RootNamespace>PtlOrchestrator.Station</RootNamespace>
+    <ApplicationIcon>..\..\assets\PTL-Orchestrator.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="..\..\assets\PTL-Orchestrator.ico" Link="Assets\PTL-Orchestrator.ico" />
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="System.IO" />
     <InternalsVisibleTo Include="PtlOrchestrator.Station.Tests" />

@@ -15,24 +15,33 @@ public sealed class LightstepPtlCommandService(
     private readonly ILightstepConnectionService _connectionService = connectionService;
     private readonly ILogger<LightstepPtlCommandService> _logger = logger;
 
-
-    public async Task SendRawAsync(string command, CancellationToken cancellationToken)
+    public async Task SendRawAsync(string command, PtlEndpoint? endpoint, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        await _connectionService.EnsureConnectedAsync(cancellationToken);
+        if (endpoint is null)
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
+        else
+            await _connectionService.EnsureConnectedAsync(endpoint, cancellationToken);
 
         _logger.LogDebug(
-            "Invio comando -> '{Command}'",
-            command);
+            "Invio comando -> '{Command}' a {Endpoint}",
+            command,
+            endpoint?.ToString() ?? "predefinito");
 
-        TryToSendCommand(command);
-
+        TryToSendCommand(command, endpoint);
     }
 
-    public async Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
+    public async Task<string> WaitForButtonAsync(string expectedModule, PtlEndpoint? endpoint, CancellationToken cancellationToken)
     {
-        var controller = ConnectAndGetController(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (endpoint is null)
+            await _connectionService.EnsureConnectedAsync(cancellationToken);
+        else
+            await _connectionService.EnsureConnectedAsync(endpoint, cancellationToken);
+
+        var controller = _connectionService.GetController(endpoint);
 
         _logger.LogDebug("In attesa conferma da modulo {Module}", expectedModule);
 
@@ -43,9 +52,7 @@ public sealed class LightstepPtlCommandService(
             var cmd = controller.GetCommand();
 
             if (cmd != null)
-            {
                 return ExtractSourceModule(cmd) ?? string.Empty;
-            }
 
             await Task.Delay(50, cancellationToken);
         }
@@ -58,18 +65,9 @@ public sealed class LightstepPtlCommandService(
         return addresses.FirstOrDefault()?.Address;
     }
 
-    private EthernetController ConnectAndGetController(CancellationToken cancellationToken)
+    private void TryToSendCommand(string command, PtlEndpoint? endpoint)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _connectionService.EnsureConnectedAsync(cancellationToken);
-
-        return _connectionService.GetController();
-    }
-
-    private void TryToSendCommand(string command)
-    {
-        var controller = _connectionService.GetController();
+        var controller = _connectionService.GetController(endpoint);
 
         CommandInfo response;
 
@@ -96,7 +94,6 @@ public sealed class LightstepPtlCommandService(
         }
 
         ValidateResponse(response);
-
     }
 
     private static void ValidateResponse(CommandInfo response)
@@ -104,5 +101,4 @@ public sealed class LightstepPtlCommandService(
         if (response == null)
             throw new InvalidOperationException("Risposta NULL dal controller PTL");
     }
-
 }

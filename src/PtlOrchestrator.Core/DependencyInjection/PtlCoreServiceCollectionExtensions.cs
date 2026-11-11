@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using PtlOrchestrator.Configuration;
 using PtlOrchestrator.Domain;
@@ -27,6 +28,8 @@ public static class PtlCoreServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
 
         services.AddSingleton<ICartManager, CartManager>();
+        // la postazione sostituisce questa implementazione con il client HTTP del server carrelli
+        services.TryAddSingleton<ICartAssignmentClient, NoCartAssignmentClient>();
         services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
         services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
         services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();
@@ -59,12 +62,10 @@ public static class PtlCoreServiceCollectionExtensions
             .Validate(o => !string.IsNullOrWhiteSpace(o.StationId), "Station:StationId non valido")
             .ValidateOnStart();
 
+        // il controller predefinito è facoltativo: i carrelli usano l'indirizzo censito sul server
         services
             .AddOptions<LightstepOptions>()
-            .Bind(configuration.GetSection("Lightstep"))
-            .Validate(o => !string.IsNullOrWhiteSpace(o.ControllerIp), "Lightstep:ControllerIp non valida")
-            .Validate(o => o.ControllerPort > 0, "Lightstep:ControllerPort non valida")
-            .ValidateOnStart();
+            .Bind(configuration.GetSection("Lightstep"));
 
         services
             .AddOptions<BarcodeLimitOptions>()
@@ -78,37 +79,11 @@ public static class PtlCoreServiceCollectionExtensions
             .Validate(o => o.Minutes > 0, "ProcessTimeout:Minutes deve essere maggiore di zero")
             .ValidateOnStart();
 
-        services
-            .AddOptions<List<CartOptions>>()
-            .Bind(configuration.GetSection("Carts"))
-            .Validate(carts => carts.Count > 0, "Carts: serve almeno un carrello")
-            .Validate(carts => carts.All(c => !string.IsNullOrWhiteSpace(c.CartId)), "Carts: CartId mancante")
-            .Validate(carts => carts.All(c => c.Baskets.Count > 0), "Carts: ogni carrello deve avere almeno una cesta")
-            .Validate(HasUniqueBasketIds, "Carts: gli ID delle ceste devono essere univoci in tutti i carrelli")
-            .ValidateOnStart();
-    }
-
-    // due ceste con lo stesso ID indirizzerebbero la stessa lampada fisica
-    private static bool HasUniqueBasketIds(List<CartOptions> carts)
-    {
-        var basketIds = carts.SelectMany(c => c.Baskets).Select(b => b.BasketId).ToList();
-
-        return basketIds.All(id => !string.IsNullOrWhiteSpace(id))
-            && basketIds.Distinct().Count() == basketIds.Count;
     }
 
     private static void AddCartContainer(IServiceCollection services)
     {
-        services.AddSingleton(provider =>
-        {
-            var cartConfigs = provider.GetRequiredService<IOptions<List<CartOptions>>>().Value;
-
-            var carts = cartConfigs.Select(cartConfig =>
-                new Cart(
-                    cartConfig.CartId,
-                    cartConfig.Baskets.Select(b => new Basket(basketId: b.BasketId, maxQuantity: 0))));
-
-            return new CartContainer(carts);
-        });
+        // il turno parte da zero: i carrelli si attivano con il check-in, che li censisce sul server
+        services.AddSingleton(_ => new CartContainer([], activeCartIds: []));
     }
 }

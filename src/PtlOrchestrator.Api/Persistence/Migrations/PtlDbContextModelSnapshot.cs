@@ -22,6 +22,99 @@ namespace PtlOrchestrator.Api.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartAssignmentEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<string>("CartCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cart_code");
+
+                    b.Property<DateTimeOffset?>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("released_at");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("StationId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("station_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cart_assignments");
+
+                    b.HasIndex("CartCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cart_assignments_open")
+                        .HasFilter("released_at IS NULL");
+
+                    b.HasIndex("StationId")
+                        .HasDatabaseName("ix_cart_assignments_station_id");
+
+                    b.ToTable("cart_assignments", (string)null);
+                });
+
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartBasketEntity", b =>
+                {
+                    b.Property<string>("CartCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cart_code");
+
+                    b.Property<string>("BasketId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("basket_id");
+
+                    b.HasKey("CartCode", "BasketId")
+                        .HasName("pk_cart_baskets");
+
+                    b.HasIndex("BasketId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cart_baskets_basket_id");
+
+                    b.ToTable("cart_baskets", (string)null);
+                });
+
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartEntity", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("ControllerIp")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("controller_ip");
+
+                    b.Property<int>("ControllerPort")
+                        .HasColumnType("integer")
+                        .HasColumnName("controller_port");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.HasKey("Code")
+                        .HasName("pk_carts");
+
+                    b.ToTable("carts", (string)null);
+                });
+
             modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.OperationEventEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -198,6 +291,35 @@ namespace PtlOrchestrator.Api.Persistence.Migrations
                     b.ToTable("work_sessions", (string)null);
                 });
 
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartAssignmentEntity", b =>
+                {
+                    b.HasOne("PtlOrchestrator.Api.Persistence.Entities.CartEntity", null)
+                        .WithMany()
+                        .HasForeignKey("CartCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cart_assignments_carts_cart_code");
+
+                    b.HasOne("PtlOrchestrator.Api.Persistence.Entities.StationEntity", null)
+                        .WithMany()
+                        .HasForeignKey("StationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cart_assignments_stations_station_id");
+                });
+
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartBasketEntity", b =>
+                {
+                    b.HasOne("PtlOrchestrator.Api.Persistence.Entities.CartEntity", "Cart")
+                        .WithMany("Baskets")
+                        .HasForeignKey("CartCode")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_cart_baskets_carts_cart_code");
+
+                    b.Navigation("Cart");
+                });
+
             modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.WorkSessionEntity", b =>
                 {
                     b.HasOne("PtlOrchestrator.Api.Persistence.Entities.OperatorEntity", "Operator")
@@ -215,6 +337,11 @@ namespace PtlOrchestrator.Api.Persistence.Migrations
                         .HasConstraintName("fk_work_sessions_stations_station_id");
 
                     b.Navigation("Operator");
+                });
+
+            modelBuilder.Entity("PtlOrchestrator.Api.Persistence.Entities.CartEntity", b =>
+                {
+                    b.Navigation("Baskets");
                 });
 #pragma warning restore 612, 618
         }

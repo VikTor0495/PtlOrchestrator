@@ -83,6 +83,18 @@ public class DiagnosticsViewModelTests
 
         public Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken) => throw new NotSupportedException();
 
+        public bool IsKnownCart(string code) => false;
+
+        public Task<CartCheckInOutcome> CheckInAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public IReadOnlyList<string> ActiveCartIds() => [];
+
+        public bool HasItems() => false;
+
+        public Task CloseWorkAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task ResetAll(CancellationToken cancellationToken)
         {
             calls.Add("reset");
