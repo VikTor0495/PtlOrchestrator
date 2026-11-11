@@ -8,7 +8,6 @@ Progetti da conoscere:
 |---|---|---|
 | `src/PtlOrchestrator.Api` | Web API (ASP.NET Core) | sì |
 | `src/PtlOrchestrator.Station` | App WPF, **solo Windows** | sì |
-| `src/PtlOrchestrator.Console` | App console (legacy) | sì |
 | `src/PtlOrchestrator.Core` | Libreria (logica PTL) | no |
 | `src/PtlOrchestrator.Contracts` | Libreria (DTO condivisi) | no |
 
@@ -25,7 +24,6 @@ Build di un singolo progetto:
 ```powershell
 dotnet build src/PtlOrchestrator.Api
 dotnet build src/PtlOrchestrator.Station
-dotnet build src/PtlOrchestrator.Console
 ```
 
 ## 2. Test
@@ -75,13 +73,8 @@ PostgreSQL in locale (senza installarlo) si può avviare con Docker: `docker com
 dotnet run --project src/PtlOrchestrator.Station
 ```
 
-Per il funzionamento reale servono `appsettings.json` compilato (`Central:BaseUrl`, `Central:ApiKey`, `SerialScanner:PortName`, `Lightstep:*`, `Carts`) e il file `prodotti_config.csv`, che non è nel repository (vedi [`docs/wiki/Setup-e-Build.md`](docs/wiki/Setup-e-Build.md)). Senza hardware (pistola seriale, controller Lightstep) l'app parte ma le funzioni PTL non rispondono.
+Per il funzionamento reale servono `appsettings.json` compilato (`Central:BaseUrl`, `Central:ApiKey`, `SerialScanner:PortName`, `Lightstep:*`) e il file `prodotti_config.csv`, che non è nel repository (vedi [`docs/wiki/Setup-e-Build.md`](docs/wiki/Setup-e-Build.md)). Senza hardware (pistola seriale, controller Lightstep) l'app parte ma le funzioni PTL non rispondono.
 
-### Console (legacy)
-
-```powershell
-dotnet run --project src/PtlOrchestrator.Console
-```
 
 ### Debugger con breakpoint
 
@@ -93,10 +86,9 @@ dotnet run --project src/PtlOrchestrator.Console
 
 ```powershell
 dotnet publish src/PtlOrchestrator.Station -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-dotnet publish src/PtlOrchestrator.Console -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-L'output è nella cartella `publish/` sotto `src/<progetto>/bin/Release/`: `net10.0-windows/win-x64/publish/` per la Station, `net10.0/win-x64/publish/` per la Console.
+L'output è nella cartella `publish/` sotto `src/<progetto>/bin/Release/`: `net10.0-windows/win-x64/publish/` per la Station.
 
 ## 5. Docker (Api + PostgreSQL)
 

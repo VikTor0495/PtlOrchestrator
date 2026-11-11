@@ -95,6 +95,17 @@
 
         <!-- Carrelli attivi e cestelli -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <!-- senza login non si mostra altro che l'accesso -->
+            <ScrollViewer.Style>
+                <Style TargetType="ScrollViewer">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLoggedIn}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ScrollViewer.Style>
             <StackPanel>
                 <TextBlock Margin="0,0,0,8" Foreground="#6B7280" FontSize="14"
                            Text="Nessun carrello attivo: fai il check-in scansionando o digitando il numero di un carrello."
@@ -164,6 +175,16 @@
 
         <!-- Stato del sistema -->
         <StatusBar Grid.Row="3" Margin="0,12,0,0">
+            <StatusBar.Style>
+                <Style TargetType="StatusBar">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLoggedIn}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StatusBar.Style>
             <StatusBarItem Content="{Binding StationId, StringFormat='Postazione {0}'}" />
             <Separator />
             <StatusBarItem>
