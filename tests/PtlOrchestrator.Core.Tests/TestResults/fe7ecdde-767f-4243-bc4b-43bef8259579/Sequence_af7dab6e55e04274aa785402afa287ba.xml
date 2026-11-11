@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<TestSequence>
-  <Test Name="PtlOrchestrator.Core.Tests.Integration.PtlSimulatorIntegrationTests.ConformantCommand_TurnsTheModuleRedOnTheController" DisplayName="PtlOrchestrator.Core.Tests.Integration.PtlSimulatorIntegrationTests.ConformantCommand_TurnsTheModuleRedOnTheController" Source="C:\LazialeDistribuzioni\PtlOrchestrator\tests\PtlOrchestrator.Core.Tests\bin\Debug\net10.0\PtlOrchestrator.Core.Tests.dll" Completed="False" />
-</TestSequence>
