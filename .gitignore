@@ -56,3 +56,10 @@ secrets.json
 
 # Segreti locali
 .env
+
+# Appunti personali locali (non versionati)
+docs/local/
+
+# Strumenti locali e documentazione non versionata
+tools/
+docs/

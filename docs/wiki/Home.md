@@ -13,6 +13,8 @@ L'evolutiva porta il vecchio eseguibile console a un sistema a due livelli:
 - [API](Api.md) — endpoint del server centrale
 - [Convenzioni](Convenzioni.md) — stile, test, flusso git
 - [Roadmap](Roadmap.md) — stato dei lavori e prossimi passi
+- [Strumenti PTL](Strumenti-PTL.md) — tool del fornitore, simulatore e come avviare la GUI
+- [Database](Database.md) — schema PostgreSQL, flusso degli eventi, DDL per il cliente
 
 ## Stato in una riga
 Core, Contracts e Api completi e testati; Station headless completa (storage, sync eventi/operatori, scanner seriale, composition root).
