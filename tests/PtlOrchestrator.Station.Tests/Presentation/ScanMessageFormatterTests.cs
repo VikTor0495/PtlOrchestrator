@@ -20,14 +20,16 @@ public class ScanMessageFormatterTests
         => Assert.Null(ScanMessageFormatter.Format("x", ScanOutcome.Ignored()));
 
     [Fact]
-    public void OperatorLoggedIn_GreetsTheOperator()
+    public void OperatorLoggedIn_TellsWhatToDoNext_WithoutRepeatingTheName()
     {
         var session = new OperatorSession(Guid.NewGuid(), Guid.NewGuid(), "Mario Rossi", DateTimeOffset.UtcNow);
 
         var message = ScanMessageFormatter.Format("BADGE", ScanOutcome.OperatorLoggedIn(session))!;
 
+        // il nome dell'operatore è già nella barra in alto: qui serve solo il passo successivo
         Assert.Equal(MessageSeverity.Success, message.Severity);
-        Assert.Contains("Mario Rossi", message.Text);
+        Assert.Contains("check-in", message.Text);
+        Assert.DoesNotContain("Mario Rossi", message.Text);
     }
 
     [Theory]

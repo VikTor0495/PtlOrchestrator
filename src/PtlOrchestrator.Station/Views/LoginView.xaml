@@ -6,7 +6,7 @@
                 BorderBrush="#D1D5DB" BorderThickness="1"
                 VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel>
-                <Image Source="/PtlStation;component/Assets/PTL-Orchestrator.png" Width="96" Height="96" HorizontalAlignment="Center"
+                <Image Source="/PtlStation;component/Assets/PTL-Orchestrator.png" Width="128" Height="128" HorizontalAlignment="Center"
                        RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True" />
                 <TextBlock Margin="0,12,0,0" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Text="PTL Station" />
                 <TextBlock Margin="0,4,0,24" Foreground="#6B7280" HorizontalAlignment="Center"

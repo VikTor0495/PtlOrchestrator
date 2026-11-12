@@ -21,7 +21,7 @@ public static class ScanMessageFormatter
         => outcome.Kind switch
         {
             ScanOutcomeKind.Ignored => null,
-            ScanOutcomeKind.OperatorLoggedIn => new(MessageSeverity.Success, $"Benvenuto {outcome.Session!.OperatorName}"),
+            ScanOutcomeKind.OperatorLoggedIn => new(MessageSeverity.Success, "Accesso eseguito: fai il check-in di un carrello per iniziare"),
             ScanOutcomeKind.LoginRejected => new(MessageSeverity.Error, FormatLoginFailure(outcome.LoginFailure!.Value)),
             ScanOutcomeKind.SystemBusy => new(MessageSeverity.Warning, "Sistema occupato: attendi e riscansiona"),
             ScanOutcomeKind.ProductAccepted => new(MessageSeverity.Success, FormatAccepted(scannedCode, outcome.Assignment!)),

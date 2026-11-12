@@ -15,7 +15,7 @@ namespace PtlOrchestrator.Station.Tests.Integration;
 
 /// <summary>
 /// Test di integrazione: la libreria Lightstep reale (AioiSystems.Lightstep) parla con il simulatore
-/// del controller PTL (tools/ptl-simulator), avviato come processo Python. Il simulatore ÃƒÂ¨ costruito
+/// del controller PTL (tools/ptl-simulator), avviato come processo Python. Il simulatore ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨ costruito
 /// dal protocollo documentato dal fornitore, non dal codice di Reflexer.
 ///
 /// Richiede Python 3 (variabile PTL_SIMULATOR_PYTHON, di default "python") e il simulatore nel repo.
@@ -30,55 +30,55 @@ public sealed class PtlSimulatorIntegrationTests
          + "m3" + (char)51 + (char)17 + (char)33
          + address + display;
 
-    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
+    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
     public async Task ConformantCommand_TurnsTheModuleRedOnTheController()
     {
         using var sim = SimulatorProcess.Start();
         var service = CreateService();
 
-        await service.SendRawAsync(ConformantCommand("0001"), sim.Endpoint, CancellationToken.None);
+        await Task.Run(() => service.SendRawAsync(ConformantCommand("0001"), sim.Endpoint, CancellationToken.None));
 
         var lamp = (await sim.StateAsync()).GetProperty("lamps").GetProperty("0001");
         Assert.Equal("rosso", lamp.GetProperty("color").GetString());
         Assert.Equal("00009", lamp.GetProperty("display").GetString());
     }
 
-    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
+    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
     public async Task BuilderCommand_IsRejectedByTheController()
     {
         // Pp505Builder non rispetta il formato a blocchi da 3 byte dei manuali: il controller risponde NAK
-        using var sim = SimulatorProcess.Start();
+        using var sim = SimulatorProcess.Start(strict: true);
         var service = CreateService();
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.SendRawAsync(Pp505Builder.BuildGreenCommand(["0001"]), sim.Endpoint, CancellationToken.None));
+            Task.Run(() => service.SendRawAsync(Pp505Builder.BuildGreenCommand(["0001"]), sim.Endpoint, CancellationToken.None)));
 
         Assert.Contains("NAK", ex.Message);
     }
 
-    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
+    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
     public async Task ConfirmPressed_OnTheController_IsReturnedToTheStation()
     {
         using var sim = SimulatorProcess.Start();
         var service = CreateService();
-        await service.SendRawAsync(ConformantCommand("0002"), sim.Endpoint, CancellationToken.None);
+        await Task.Run(() => service.SendRawAsync(ConformantCommand("0002"), sim.Endpoint, CancellationToken.None));
 
         await sim.ControlAsync(new { op = "press", address = "0002" });
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var module = await service.WaitForButtonAsync("0002", sim.Endpoint, timeout.Token);
+        var module = await Task.Run(() => service.WaitForButtonAsync("0002", sim.Endpoint, timeout.Token));
         Assert.Equal("0002", module);
     }
 
-    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
+    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
     public async Task TwoCarts_OnTwoControllers_EachModuleLightsOnlyOnItsOwnController()
     {
         using var first = SimulatorProcess.Start();
         using var second = SimulatorProcess.Start();
         var service = CreateService();
 
-        await service.SendRawAsync(ConformantCommand("0001"), first.Endpoint, CancellationToken.None);
-        await service.SendRawAsync(ConformantCommand("0003"), second.Endpoint, CancellationToken.None);
+        await Task.Run(() => service.SendRawAsync(ConformantCommand("0001"), first.Endpoint, CancellationToken.None));
+        await Task.Run(() => service.SendRawAsync(ConformantCommand("0003"), second.Endpoint, CancellationToken.None));
 
         var firstLamps = (await first.StateAsync()).GetProperty("lamps");
         var secondLamps = (await second.StateAsync()).GetProperty("lamps");
@@ -110,21 +110,26 @@ public sealed class PtlSimulatorIntegrationTests
 
         public PtlEndpoint Endpoint { get; }
 
-        public static SimulatorProcess Start()
+        public static SimulatorProcess Start(bool strict = false)
         {
             var port = FreePort();
             var controlPort = FreePort();
             var script = Path.Combine(FindRepositoryRoot(), "tools", "ptl-simulator", "simulator.py");
             var python = PythonExecutable();
 
-            var process = Process.Start(new ProcessStartInfo
+            var info = new ProcessStartInfo
             {
                 FileName = python,
                 ArgumentList = { script, "--headless", "--port", port.ToString(), "--control-port", controlPort.ToString() },
                 UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true
-            }) ?? throw new InvalidOperationException("Impossibile avviare il simulatore Python");
+                CreateNoWindow = true
+                // niente redirezione dell'output: nessuno lo leggerebbe e un buffer pieno fermerebbe il simulatore
+            };
+
+            if (strict)
+                info.ArgumentList.Add("--strict");
+
+            var process = Process.Start(info) ?? throw new InvalidOperationException("Impossibile avviare il simulatore Python");
 
             var sim = new SimulatorProcess(process, port, controlPort);
             sim.WaitUntilListening(port);
@@ -184,7 +189,7 @@ public sealed class PtlSimulatorIntegrationTests
             return port;
         }
 
-        // "python" nel PATH puÃƒÂ² essere lo stub di Microsoft Store, che non esegue script: si preferisce l'installazione reale
+        // "python" nel PATH puÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â² essere lo stub di Microsoft Store, che non esegue script: si preferisce l'installazione reale
         private static string PythonExecutable()
         {
             var configured = Environment.GetEnvironmentVariable("PTL_SIMULATOR_PYTHON");

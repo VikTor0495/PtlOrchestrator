@@ -162,7 +162,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private async Task ProcessCodeAsync(string code, CancellationToken cancellationToken)
     {
-        var outcome = await _scanDispatcher.DispatchAsync(code, cancellationToken);
+        // fuori dal thread della finestra: la DLL del PTL blocca il thread che la chiama e può rimandare callback al suo contesto
+        var outcome = await Task.Run(() => _scanDispatcher.DispatchAsync(code, cancellationToken), cancellationToken);
 
         _dispatcher.Post(() =>
         {
@@ -198,7 +199,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // i carrelli del turno tornano disponibili per le altre postazioni
         foreach (var cartId in _cartManager.ActiveCartIds())
         {
-            var release = await _cartManager.ReleaseCartAsync(cartId, cancellationToken);
+            var release = await Task.Run(() => _cartManager.ReleaseCartAsync(cartId, cancellationToken), cancellationToken);
             if (!release.Success)
             {
                 _dispatcher.Post(() => LastMessage = new(MessageSeverity.Error, release.Message));
@@ -225,7 +226,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
-            await _cartManager.CloseWorkAsync(cancellationToken);
+            await Task.Run(() => _cartManager.CloseWorkAsync(cancellationToken), cancellationToken);
 
             _dispatcher.Post(() =>
             {
@@ -247,7 +248,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (string.IsNullOrEmpty(cartId))
             return;
 
-        var outcome = await _cartManager.ReleaseCartAsync(cartId, cancellationToken);
+        var outcome = await Task.Run(() => _cartManager.ReleaseCartAsync(cartId, cancellationToken), cancellationToken);
 
         _dispatcher.Post(() =>
         {
