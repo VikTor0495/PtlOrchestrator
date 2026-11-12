@@ -5,10 +5,14 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>PtlOrchestrator.Station.Tests</RootNamespace>
+    <!-- i test della GUI istanziano le viste WPF vere -->
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
   </ItemGroup>
 
   <ItemGroup>
