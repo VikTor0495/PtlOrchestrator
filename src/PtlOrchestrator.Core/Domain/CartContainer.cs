@@ -9,7 +9,9 @@ public enum CartCheckInResult
     AlreadyActive,
     Unknown,
     /// <summary>Il server ha negato l'occupazione o il controller non risponde.</summary>
-    Rejected
+    Rejected,
+    /// <summary>Ci sono già <see cref="CartContainer.MaxActiveCarts"/> carrelli attivi nel turno.</summary>
+    LimitReached
 }
 
 /// <summary>
@@ -20,6 +22,11 @@ public sealed class CartContainer
 {
     private readonly List<Cart> _carts;
     private readonly HashSet<string> _active;
+
+    /// <summary>Massimo numero di carrelli che una postazione può avere attivi contemporaneamente.</summary>
+    public const int MaxActiveCarts = 4;
+
+    public int ActiveCount => _active.Count;
 
     /// <param name="carts">Carrelli configurati.</param>
     /// <param name="activeCartIds">Carrelli attivi all'avvio; se nullo, tutti i configurati restano attivi.</param>
@@ -54,6 +61,9 @@ public sealed class CartContainer
         if (!_carts.Any(c => c.CartId == cartId))
             return CartCheckInResult.Unknown;
 
+        if (!_active.Contains(cartId) && _active.Count >= MaxActiveCarts)
+            return CartCheckInResult.LimitReached;
+
         return _active.Add(cartId)
             ? CartCheckInResult.Done
             : CartCheckInResult.AlreadyActive;
@@ -72,6 +82,9 @@ public sealed class CartContainer
     {
         if (_active.Contains(cart.CartId))
             return CartCheckInResult.AlreadyActive;
+
+        if (_active.Count >= MaxActiveCarts)
+            return CartCheckInResult.LimitReached;
 
         _carts.RemoveAll(c => c.CartId == cart.CartId);
         _carts.Add(cart);

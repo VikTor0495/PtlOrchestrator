@@ -219,4 +219,37 @@ public class CartCheckInTests
         Assert.NotEmpty(_ptl.SentTo);
         Assert.All(_ptl.SentTo, endpoint => Assert.Equal(Controller, endpoint));
     }
+
+    [Fact]
+    public async Task CheckIn_BeyondTheMaximumNumberOfCarts_IsRefusedWithoutAskingTheServer()
+    {
+        for (var n = 1; n <= CartContainer.MaxActiveCarts; n++)
+        {
+            GrantCart(n.ToString(), $"000{n}");
+            Assert.True((await _manager.CheckInAsync(n.ToString(), CancellationToken.None)).Success);
+        }
+
+        var outcome = await _manager.CheckInAsync("5", CancellationToken.None);
+
+        Assert.Equal(CartCheckInResult.LimitReached, outcome.Result);
+        Assert.Contains("Massimo 4", outcome.Message);
+        Assert.Equal(CartContainer.MaxActiveCarts, _client.ClaimCalls);
+    }
+
+    [Fact]
+    public async Task CheckIn_AfterReleasingACart_IsAllowedAgain()
+    {
+        for (var n = 1; n <= CartContainer.MaxActiveCarts; n++)
+        {
+            GrantCart(n.ToString(), $"000{n}");
+            await _manager.CheckInAsync(n.ToString(), CancellationToken.None);
+        }
+
+        await _manager.ReleaseCartAsync("1", CancellationToken.None);
+        GrantCart("5", "0005");
+
+        var outcome = await _manager.CheckInAsync("5", CancellationToken.None);
+
+        Assert.True(outcome.Success);
+    }
 }

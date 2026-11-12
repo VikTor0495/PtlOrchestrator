@@ -71,7 +71,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public string StationId { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCarts), nameof(NoCarts), nameof(CartColumns))]
     private IReadOnlyList<CartSnapshot> _carts;
+
+    public bool HasCarts => Carts.Count > 0;
+
+    public bool NoCarts => !HasCarts;
+
+    /// <summary>Colonne della griglia carrelli: 1, 2 o 3 carrelli in fila, 4 in una griglia 2x2.</summary>
+    public int CartColumns => Carts.Count switch
+    {
+        0 or 1 => 1,
+        2 => 2,
+        3 => 3,
+        _ => 2
+    };
+
+    /// <summary>Richiesta di un popup per l'operatore (per ora: limite di carrelli superato).</summary>
+    public event EventHandler<string>? PopupRequested;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoggedOut))]
@@ -134,6 +151,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var code = CodeInput.Trim();
         CodeInput = string.Empty;
 
+        await ProcessCodeAsync(code, cancellationToken);
+    }
+
+    /// <summary>Check-in di un carrello dal dialogo: stesso percorso di una scansione.</summary>
+    public Task CheckInCartAsync(string cartCode, CancellationToken cancellationToken)
+        => string.IsNullOrWhiteSpace(cartCode)
+            ? Task.CompletedTask
+            : ProcessCodeAsync(cartCode.Trim(), cancellationToken);
+
+    private async Task ProcessCodeAsync(string code, CancellationToken cancellationToken)
+    {
         var outcome = await _scanDispatcher.DispatchAsync(code, cancellationToken);
 
         _dispatcher.Post(() =>
@@ -143,7 +171,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             ApplySession(_sessionContext.Current);
 
             LastMessage = ScanMessageFormatter.Format(code, outcome) ?? LastMessage;
+            RaisePopupIfNeeded(outcome);
         });
+    }
+
+    private void RaisePopupIfNeeded(ScanOutcome outcome)
+    {
+        if (outcome.Kind == ScanOutcomeKind.CartLimitReached)
+            PopupRequested?.Invoke(this, outcome.Message ?? "Limite di carrelli raggiunto");
     }
 
     private bool CanSubmitCode() => CodeInput.Trim().Length > 0;
@@ -237,6 +272,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
             if (message is not null)
                 LastMessage = message;
+
+            RaisePopupIfNeeded(e.Outcome);
         });
     }
 

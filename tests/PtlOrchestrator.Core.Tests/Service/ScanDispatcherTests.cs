@@ -206,4 +206,16 @@ public class ScanDispatcherTests
         Assert.Equal(ScanOutcomeKind.LoginRejected, outcome.Kind);
         Assert.Empty(_cartManager.CheckedInCarts);
     }
+
+    [Fact]
+    public async Task Dispatch_WhenTheCartLimitIsReached_ReportsItSeparately()
+    {
+        StartSession();
+        _cartManager.KnownCarts.Add("5");
+        _cartManager.NextCheckInResult = CartCheckInResult.LimitReached;
+
+        var outcome = await _dispatcher.DispatchAsync("5", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.CartLimitReached, outcome.Kind);
+    }
 }

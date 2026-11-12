@@ -19,7 +19,8 @@
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Padding="16,6" Margin="0,0,8,0" Content="Chiudi" Click="Close_Click" />
-            <Button Padding="16,6" Content="Salva" Click="Save_Click" />
+            <Button Padding="16,6" Margin="0,0,8,0" Content="Salva" Click="Save_Click" />
+            <Button Padding="16,6" Content="Salva e riavvia" Click="SaveAndRestart_Click" />
         </StackPanel>
     </StackPanel>
 </Window>

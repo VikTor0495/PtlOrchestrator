@@ -126,6 +126,11 @@ public sealed class CartManager(
         if (_cartContainer.IsActive(cartCode))
             return new(CartCheckInResult.AlreadyActive, $"Il carrello {cartCode} è già attivo");
 
+        // il limite si controlla prima di occupare il carrello sul server
+        if (_cartContainer.ActiveCount >= CartContainer.MaxActiveCarts)
+            return new(CartCheckInResult.LimitReached,
+                $"Massimo {CartContainer.MaxActiveCarts} carrelli per volta: rimuovine uno prima di fare un altro check-in");
+
         var sessionId = _sessionContext.Current?.SessionId;
 
         CartClaimResult claim;
@@ -153,10 +158,16 @@ public sealed class CartManager(
                 $"Controller PTL {endpoint} non raggiungibile: carrello {cartCode} non attivato");
         }
 
-        _cartContainer.Activate(new Cart(
+        var activation = _cartContainer.Activate(new Cart(
             info.CartCode,
             info.BasketIds.Select(id => new Basket(basketId: id, maxQuantity: 0)),
             endpoint));
+
+        if (activation != CartCheckInResult.Done)
+        {
+            await TryReleaseOnServerAsync(cartCode, cancellationToken);
+            return new(activation, $"Carrello {cartCode} non attivato");
+        }
 
         _logger.LogInformation("Check-in del carrello {CartCode} sul controller {Endpoint}", cartCode, endpoint);
         await _operationRecorder.RecordAsync(OperationEventType.CartCheckedIn, cartId: cartCode, details: endpoint.ToString());

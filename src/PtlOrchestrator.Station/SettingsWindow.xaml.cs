@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,16 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object sender, RoutedEventArgs e) => await SaveAsync();
+
+    private async void SaveAndRestart_Click(object sender, RoutedEventArgs e)
+    {
+        if (await SaveAsync())
+            Restart();
+    }
+
+    /// <summary>Salva i campi modificati. Vero solo se qualcosa è stato salvato.</summary>
+    private async Task<bool> SaveAsync()
     {
         var changes = new Dictionary<string, string>();
 
@@ -58,7 +68,7 @@ public partial class SettingsWindow : Window
             if (IntegerKeys.Contains(key) && !int.TryParse(value, out _))
             {
                 StatusText.Text = $"{key}: serve un numero intero";
-                return;
+                return false;
             }
 
             // si salva solo ciò che differisce dalla configurazione attuale, così non si copiano valori di default nel database
@@ -69,18 +79,31 @@ public partial class SettingsWindow : Window
         if (changes.Count == 0)
         {
             StatusText.Text = "Nessuna modifica da salvare";
-            return;
+            return false;
         }
 
         try
         {
             await _store.SaveAsync(changes, DateTimeOffset.UtcNow, CancellationToken.None);
-            StatusText.Text = $"Salvate {changes.Count} impostazioni. Riavvia la postazione per applicarle.";
+            StatusText.Text = $"Salvate {changes.Count} impostazioni. Valgono dal riavvio della postazione.";
+            return true;
         }
         catch (Exception ex)
         {
             StatusText.Text = $"Salvataggio non riuscito: {ex.Message}";
+            return false;
         }
+    }
+
+    // riapre la postazione con le impostazioni appena salvate (le variabili d'ambiente passano al nuovo processo)
+    private static void Restart()
+    {
+        var executable = Environment.ProcessPath;
+        if (executable is null)
+            return;
+
+        Process.Start(new ProcessStartInfo(executable) { UseShellExecute = false });
+        Application.Current.Shutdown();
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

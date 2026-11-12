@@ -319,6 +319,61 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task CheckInBeyondTheCartLimit_RaisesAPopupAndShowsAWarning()
+    {
+        _session.Begin(Session());
+        string? popup = null;
+        _viewModel.PopupRequested += (_, message) => popup = message;
+        _viewModel.CodeInput = "5";
+        _dispatcher.NextOutcome = ScanOutcome.CartLimitReached("Massimo 4 carrelli per volta");
+
+        await _viewModel.SubmitCodeCommand.ExecuteAsync(null);
+
+        Assert.Contains("Massimo 4", popup);
+        Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+    }
+
+    [Fact]
+    public void CartLimit_FromTheScanner_RaisesAPopupToo()
+    {
+        string? popup = null;
+        _viewModel.PopupRequested += (_, message) => popup = message;
+
+        _scans.Raise("5", ScanOutcome.CartLimitReached("Massimo 4 carrelli per volta"));
+
+        Assert.NotNull(popup);
+    }
+
+    [Fact]
+    public async Task CheckInCart_SendsTheTrimmedNumberThroughTheSamePathAsAScan()
+    {
+        await _viewModel.CheckInCartAsync("  3 ", CancellationToken.None);
+        await _viewModel.CheckInCartAsync("   ", CancellationToken.None);
+
+        Assert.Equal(["3"], _dispatcher.Submitted);
+    }
+
+    [Theory]
+    [InlineData(0, 1, false)]
+    [InlineData(1, 1, true)]
+    [InlineData(2, 2, true)]
+    [InlineData(3, 3, true)]
+    [InlineData(4, 2, true)]
+    public void CartLayout_AdaptsToTheNumberOfCarts(int count, int expectedColumns, bool hasCarts)
+    {
+        var carts = Enumerable.Range(1, count).Select(n => new Cart(n.ToString(), [new Basket($"000{n}", 0)]));
+        var container = new CartContainer(carts);
+        using var viewModel = new MainViewModel(
+            _scans, _session, _login, _dispatcher, _cartManager, _outbox, _lightstep, container,
+            Options.Create(new StationOptions { StationId = "ST-TEST" }),
+            new ImmediateDispatcher(), TimeProvider.System, NullLogger<MainViewModel>.Instance);
+
+        Assert.Equal(expectedColumns, viewModel.CartColumns);
+        Assert.Equal(hasCarts, viewModel.HasCarts);
+        Assert.Equal(!hasCarts, viewModel.NoCarts);
+    }
+
+    [Fact]
     public void Dispose_UnsubscribesFromScans()
     {
         Assert.Equal(1, _scans.SubscriberCount);

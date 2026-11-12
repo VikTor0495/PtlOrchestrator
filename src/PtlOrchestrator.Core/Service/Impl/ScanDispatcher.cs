@@ -71,8 +71,11 @@ public sealed class ScanDispatcher(
     {
         var outcome = await _cartManager.CheckInAsync(cartId, cancellationToken);
 
-        return outcome.Success
-            ? ScanOutcome.CartCheckedIn(outcome.Message)
-            : ScanOutcome.CartCheckInRejected(outcome.Message);
+        return outcome.Result switch
+        {
+            CartCheckInResult.Done => ScanOutcome.CartCheckedIn(outcome.Message),
+            CartCheckInResult.LimitReached => ScanOutcome.CartLimitReached(outcome.Message),
+            _ => ScanOutcome.CartCheckInRejected(outcome.Message)
+        };
     }
 }

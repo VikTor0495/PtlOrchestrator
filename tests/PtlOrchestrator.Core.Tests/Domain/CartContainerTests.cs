@@ -187,4 +187,38 @@ public class CartContainerTests
         Assert.True(result.Success);
         Assert.Equal("2", result.Cart!.CartId);
     }
+
+    [Fact]
+    public void CheckIn_BeyondTheMaximumNumberOfCarts_IsRefused()
+    {
+        var carts = Enumerable.Range(1, 5).Select(n => CartFactory.CreateCart(n.ToString(), $"000{n}")).ToArray();
+        var container = new CartContainer(carts, activeCartIds: []);
+
+        for (var n = 1; n <= CartContainer.MaxActiveCarts; n++)
+            Assert.Equal(CartCheckInResult.Done, container.CheckIn(n.ToString()));
+
+        Assert.Equal(CartCheckInResult.LimitReached, container.CheckIn("5"));
+        Assert.Equal(CartContainer.MaxActiveCarts, container.ActiveCount);
+        Assert.False(container.IsActive("5"));
+    }
+
+    [Fact]
+    public void CheckIn_OfAnActiveCartAtTheLimit_IsStillReportedAsAlreadyActive()
+    {
+        var carts = Enumerable.Range(1, 4).Select(n => CartFactory.CreateCart(n.ToString(), $"000{n}")).ToArray();
+        var container = new CartContainer(carts, activeCartIds: ["1", "2", "3", "4"]);
+
+        Assert.Equal(CartCheckInResult.AlreadyActive, container.CheckIn("1"));
+    }
+
+    [Fact]
+    public void Release_FreesASlotForAnotherCart()
+    {
+        var carts = Enumerable.Range(1, 5).Select(n => CartFactory.CreateCart(n.ToString(), $"000{n}")).ToArray();
+        var container = new CartContainer(carts, activeCartIds: ["1", "2", "3", "4"]);
+
+        container.Release("1");
+
+        Assert.Equal(CartCheckInResult.Done, container.CheckIn("5"));
+    }
 }

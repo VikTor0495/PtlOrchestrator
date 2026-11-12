@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using PtlOrchestrator.Station.Presentation;
 
@@ -7,26 +6,28 @@ namespace PtlOrchestrator.Station;
 
 public partial class MainWindow : Window
 {
-    private readonly MainViewModel _viewModel;
     private readonly IServiceProvider _services;
 
     public MainWindow(MainViewModel viewModel, IServiceProvider services)
     {
         InitializeComponent();
 
-        _viewModel = viewModel;
         _services = services;
         DataContext = viewModel;
+
+        // popup per l'operatore, ad esempio quando si supera il numero massimo di carrelli
+        viewModel.PopupRequested += (_, message) =>
+            MessageBox.Show(this, message, "Limite carrelli", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    private void Settings_Click(object sender, RoutedEventArgs e)
+    public void OpenSettings()
     {
         var window = _services.GetRequiredService<SettingsWindow>();
         window.Owner = this;
         window.ShowDialog();
     }
 
-    private void Diagnostics_Click(object sender, RoutedEventArgs e)
+    public void OpenDiagnostics()
     {
         var window = _services.GetRequiredService<DiagnosticsWindow>();
         window.Owner = this;
