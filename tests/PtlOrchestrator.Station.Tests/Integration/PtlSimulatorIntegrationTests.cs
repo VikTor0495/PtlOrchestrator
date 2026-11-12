@@ -30,7 +30,7 @@ public sealed class PtlSimulatorIntegrationTests
          + "m3" + (char)51 + (char)17 + (char)33
          + address + display;
 
-    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
+    [RequiresLightstepLicenseFact]
     public async Task ConformantCommand_TurnsTheModuleRedOnTheController()
     {
         using var sim = SimulatorProcess.Start();
@@ -43,7 +43,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Equal("00009", lamp.GetProperty("display").GetString());
     }
 
-    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
+    [RequiresLightstepLicenseFact]
     public async Task BuilderCommand_IsRejectedByTheController()
     {
         // Pp505Builder non rispetta il formato a blocchi da 3 byte dei manuali: il controller risponde NAK
@@ -56,7 +56,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Contains("NAK", ex.Message);
     }
 
-    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
+    [RequiresLightstepLicenseFact]
     public async Task ConfirmPressed_OnTheController_IsReturnedToTheStation()
     {
         using var sim = SimulatorProcess.Start();
@@ -70,7 +70,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Equal("0002", module);
     }
 
-    [Fact(Skip = "Non affidabile: la DLL Lightstep a volte non completa Connect se chiamata da un thread del pool (non raggiunge nemmeno il simulatore). Da indagare sul campo. Vedi Roadmap 5.11")]
+    [RequiresLightstepLicenseFact]
     public async Task TwoCarts_OnTwoControllers_EachModuleLightsOnlyOnItsOwnController()
     {
         using var first = SimulatorProcess.Start();
@@ -90,7 +90,7 @@ public sealed class PtlSimulatorIntegrationTests
 
     private static LightstepPtlCommandService CreateService()
     {
-        var options = Options.Create(new LightstepOptions { LicenzeKey = string.Empty, ConnectionTimeout = 3000 });
+        var options = Options.Create(new LightstepOptions { LicenzeKey = RequiresLightstepLicenseFactAttribute.License, ConnectionTimeout = 3000 });
         var connections = new LightstepConnectionService(options, NullLogger<LightstepConnectionService>.Instance);
         return new LightstepPtlCommandService(connections, NullLogger<LightstepPtlCommandService>.Instance);
     }
@@ -214,3 +214,21 @@ public sealed class PtlSimulatorIntegrationTests
 
 [CollectionDefinition("PtlSimulator", DisableParallelization = true)]
 public sealed class PtlSimulatorCollection;
+
+/// <summary>
+/// Questi test usano la libreria Lightstep vera. Senza un codice di licenza la libreria mostra un avviso di prova
+/// (finestra modale) e Connect resta bloccato: servono la variabile d'ambiente PTL_LIGHTSTEP_LICENSE con il codice.
+/// Senza, i test vengono saltati.
+/// </summary>
+public sealed class RequiresLightstepLicenseFactAttribute : FactAttribute
+{
+    public const string VariableName = "PTL_LIGHTSTEP_LICENSE";
+
+    public static string License => Environment.GetEnvironmentVariable(VariableName) ?? string.Empty;
+
+    public RequiresLightstepLicenseFactAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(License))
+            Skip = $"Serve la variabile d'ambiente {VariableName} con il codice di licenza Lightstep: senza, la libreria mostra l'avviso di prova e Connect si blocca";
+    }
+}
