@@ -63,3 +63,6 @@ docs/local/
 # Strumenti locali e documentazione non versionata
 tools/
 docs/
+
+# SO
+.DS_Store
