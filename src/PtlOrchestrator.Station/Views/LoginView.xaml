@@ -6,7 +6,8 @@
                 BorderBrush="#D1D5DB" BorderThickness="1"
                 VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel>
-                <Image Source="/Assets/PTL-Orchestrator.ico" Width="64" Height="64" HorizontalAlignment="Center" />
+                <Image Source="/Assets/PTL-Orchestrator.png" Width="96" Height="96" HorizontalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True" />
                 <TextBlock Margin="0,12,0,0" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Text="PTL Station" />
                 <TextBlock Margin="0,4,0,24" Foreground="#6B7280" HorizontalAlignment="Center"
                            Text="Scansiona o digita il codice operatore" />
@@ -24,7 +25,8 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Button Grid.Column="0" Padding="16,10" FontSize="16" Content="Entra" Command="{Binding SubmitCodeCommand}" />
-                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="16,10" FontSize="16" Content="Tastiera" Click="Keyboard_Click" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="16,6" FontSize="24" FontFamily="Segoe UI Symbol"
+                            Content="⌨" ToolTip="Tastiera su schermo" Click="Keyboard_Click" />
                 </Grid>
 
                 <!-- esito dell'accesso (operatore sconosciuto, non attivo, ...) -->

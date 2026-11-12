@@ -191,7 +191,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             _dispatcher.Post(() => LastMessage = new(
                 MessageSeverity.Warning,
-                "Ci sono prodotti nei carrelli: chiudi lo sventagliamento prima di uscire"));
+                "Ci sono prodotti nei carrelli: premi Reset prima di uscire"));
             return;
         }
 
@@ -230,13 +230,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             _dispatcher.Post(() =>
             {
                 Carts = CartSnapshot.From(_cartContainer);
-                LastMessage = new(MessageSeverity.Success, "Sventagliamento chiuso: report CSV generato e carrelli azzerati");
+                LastMessage = new(MessageSeverity.Success, "Reset eseguito: report generato e carrelli azzerati");
             });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Chiusura dello sventagliamento non riuscita");
-            _dispatcher.Post(() => LastMessage = new(MessageSeverity.Error, $"Chiusura non riuscita: {ex.Message}"));
+            _dispatcher.Post(() => LastMessage = new(MessageSeverity.Error, $"Reset non riuscito: {ex.Message}"));
         }
     }
 

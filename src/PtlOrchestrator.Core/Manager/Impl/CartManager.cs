@@ -42,7 +42,7 @@ public sealed class CartManager(
         {
             return await RejectAsync(
                 barcode,
-                $"Barcode {barcode} non presente nel file di configurazione dei limiti di carico");
+                $"Codice {barcode} non riconosciuto: non è un carrello né un prodotto configurato");
         }
 
         var result = _cartContainer.AssignItem(barcode, _basketLimitService.GetMaxFor(barcode));
@@ -182,7 +182,7 @@ public sealed class CartManager(
             return new(false, $"Il carrello {cartCode} non è attivo");
 
         if (!_cartContainer.IsEmpty(cartCode))
-            return new(false, $"Il carrello {cartCode} contiene prodotti: chiudi lo sventagliamento prima di rimuoverlo");
+            return new(false, $"Il carrello {cartCode} contiene prodotti: premi Reset prima di rimuoverlo");
 
         try
         {

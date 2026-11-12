@@ -11,11 +11,11 @@ using PtlOrchestrator.Domain;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Service.Impl;
 
-namespace PtlOrchestrator.Core.Tests.Integration;
+namespace PtlOrchestrator.Station.Tests.Integration;
 
 /// <summary>
 /// Test di integrazione: la libreria Lightstep reale (AioiSystems.Lightstep) parla con il simulatore
-/// del controller PTL (tools/ptl-simulator), avviato come processo Python. Il simulatore è costruito
+/// del controller PTL (tools/ptl-simulator), avviato come processo Python. Il simulatore ÃƒÂ¨ costruito
 /// dal protocollo documentato dal fornitore, non dal codice di Reflexer.
 ///
 /// Richiede Python 3 (variabile PTL_SIMULATOR_PYTHON, di default "python") e il simulatore nel repo.
@@ -30,7 +30,7 @@ public sealed class PtlSimulatorIntegrationTests
          + "m3" + (char)51 + (char)17 + (char)33
          + address + display;
 
-    [Fact(Skip = "Da sistemare: la DLL Lightstep richiede Windows Forms (spostare in Station.Tests, net10.0-windows) e SendCommand si blocca nel test host. Vedi Roadmap 5.11")]
+    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
     public async Task ConformantCommand_TurnsTheModuleRedOnTheController()
     {
         using var sim = SimulatorProcess.Start();
@@ -43,7 +43,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Equal("00009", lamp.GetProperty("display").GetString());
     }
 
-    [Fact(Skip = "Da sistemare: la DLL Lightstep richiede Windows Forms (spostare in Station.Tests, net10.0-windows) e SendCommand si blocca nel test host. Vedi Roadmap 5.11")]
+    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
     public async Task BuilderCommand_IsRejectedByTheController()
     {
         // Pp505Builder non rispetta il formato a blocchi da 3 byte dei manuali: il controller risponde NAK
@@ -56,7 +56,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Contains("NAK", ex.Message);
     }
 
-    [Fact(Skip = "Da sistemare: la DLL Lightstep richiede Windows Forms (spostare in Station.Tests, net10.0-windows) e SendCommand si blocca nel test host. Vedi Roadmap 5.11")]
+    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
     public async Task ConfirmPressed_OnTheController_IsReturnedToTheStation()
     {
         using var sim = SimulatorProcess.Start();
@@ -70,7 +70,7 @@ public sealed class PtlSimulatorIntegrationTests
         Assert.Equal("0002", module);
     }
 
-    [Fact(Skip = "Da sistemare: la DLL Lightstep richiede Windows Forms (spostare in Station.Tests, net10.0-windows) e SendCommand si blocca nel test host. Vedi Roadmap 5.11")]
+    [Fact(Skip = "Da sistemare: nel test host SendCommand si blocca verso il simulatore (da console funziona). Vedi Roadmap 5.11")]
     public async Task TwoCarts_OnTwoControllers_EachModuleLightsOnlyOnItsOwnController()
     {
         using var first = SimulatorProcess.Start();
@@ -184,7 +184,7 @@ public sealed class PtlSimulatorIntegrationTests
             return port;
         }
 
-        // "python" nel PATH può essere lo stub di Microsoft Store, che non esegue script: si preferisce l'installazione reale
+        // "python" nel PATH puÃƒÂ² essere lo stub di Microsoft Store, che non esegue script: si preferisce l'installazione reale
         private static string PythonExecutable()
         {
             var configured = Environment.GetEnvironmentVariable("PTL_SIMULATOR_PYTHON");

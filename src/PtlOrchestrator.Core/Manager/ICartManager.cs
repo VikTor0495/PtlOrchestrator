@@ -20,7 +20,7 @@ public interface ICartManager
 
     bool HasItems();
 
-    /// <summary>Chiude lo sventagliamento: genera il CSV e azzera i carrelli, che restano attivi.</summary>
+    /// <summary>Reset: genera il CSV e azzera i carrelli, che restano attivi.</summary>
     Task CloseWorkAsync(CancellationToken cancellationToken);
 
     Task ResetAll(CancellationToken cancellationToken);

@@ -57,7 +57,7 @@ public class CartManagerOperationEventsTests
         var rejected = Assert.Single(_context.Recorder.Recorded);
         Assert.Equal(OperationEventType.BarcodeRejected, rejected.Type);
         Assert.Equal("UNKNOWN", rejected.Barcode);
-        Assert.Contains("non presente", rejected.Details);
+        Assert.Contains("non riconosciuto", rejected.Details);
     }
 
     [Fact]

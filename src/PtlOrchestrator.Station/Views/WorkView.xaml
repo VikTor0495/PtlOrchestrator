@@ -30,9 +30,11 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Margin="0,0,8,0" Padding="16,10" FontSize="15" Content="Check-in carrello" Click="CheckIn_Click" />
-                    <Button Margin="0,0,8,0" Padding="16,10" FontSize="15" Content="Tastiera" Click="Keyboard_Click" />
                     <Button Margin="0,0,8,0" Padding="16,10" FontSize="15" Content="Reset"
+                            ToolTip="Genera il report e azzera i carrelli"
                             Command="{Binding CloseWorkCommand}" />
+                    <Button Margin="0,0,8,0" Padding="14,4" FontSize="24" FontFamily="Segoe UI Symbol" Content="⌨"
+                            ToolTip="Tastiera su schermo" Click="Keyboard_Click" />
                     <Button Padding="16,10" FontSize="15" Content="Esci" Command="{Binding LogoutCommand}" />
                 </StackPanel>
             </Grid>

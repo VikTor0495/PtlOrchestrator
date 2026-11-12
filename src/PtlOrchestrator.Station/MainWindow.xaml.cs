@@ -15,6 +15,19 @@ public partial class MainWindow : Window
         _services = services;
         DataContext = viewModel;
 
+        // F11: schermo intero senza barra del titolo (e ritorno alla finestra normale)
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != System.Windows.Input.Key.F11)
+                return;
+
+            var fullScreen = WindowStyle == WindowStyle.None;
+            WindowStyle = fullScreen ? WindowStyle.SingleBorderWindow : WindowStyle.None;
+            WindowState = WindowState.Normal;
+            WindowState = WindowState.Maximized;
+            e.Handled = true;
+        };
+
         // popup per l'operatore, ad esempio quando si supera il numero massimo di carrelli
         viewModel.PopupRequested += (_, message) =>
             MessageBox.Show(this, message, "Limite carrelli", MessageBoxButton.OK, MessageBoxImage.Warning);

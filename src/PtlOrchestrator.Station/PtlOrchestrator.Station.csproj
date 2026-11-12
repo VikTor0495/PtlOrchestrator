@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <Resource Include="..\..\assets\PTL-Orchestrator.ico" Link="Assets\PTL-Orchestrator.ico" />
+    <!-- il logo nella schermata di login usa il PNG: dal .ico WPF prenderebbe il fotogramma più piccolo e lo ingrandirebbe -->
+    <Resource Include="..\..\assets\PTL-Orchestrator.png" Link="Assets\PTL-Orchestrator.png" />
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="System.IO" />
     <!-- Windows Forms serve solo alla DLL Lightstep: i suoi using globali renderebbero ambigui i tipi WPF -->
