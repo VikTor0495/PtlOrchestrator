@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using PtlOrchestrator.Station.Presentation;
 
@@ -8,35 +6,44 @@ namespace PtlOrchestrator.Station;
 
 public partial class MainWindow : Window
 {
-    private readonly MainViewModel _viewModel;
     private readonly IServiceProvider _services;
 
     public MainWindow(MainViewModel viewModel, IServiceProvider services)
     {
         InitializeComponent();
 
-        _viewModel = viewModel;
         _services = services;
         DataContext = viewModel;
 
-        // dopo un tentativo di accesso il ViewModel azzera il PIN: il campo deve seguire
-        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        // F11: schermo intero senza barra del titolo (e ritorno alla finestra normale)
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != System.Windows.Input.Key.F11)
+                return;
+
+            var fullScreen = WindowStyle == WindowStyle.None;
+            WindowStyle = fullScreen ? WindowStyle.SingleBorderWindow : WindowStyle.None;
+            WindowState = WindowState.Normal;
+            WindowState = WindowState.Maximized;
+            e.Handled = true;
+        };
+
+        // popup per l'operatore, ad esempio quando si supera il numero massimo di carrelli
+        viewModel.PopupRequested += (_, message) =>
+            MessageBox.Show(this, message, "Limite carrelli", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
-    // PasswordBox non supporta il binding: il PIN passa dal ViewModel solo come testo temporaneo
-    private void PinBox_PasswordChanged(object sender, RoutedEventArgs e)
-        => _viewModel.Pin = ((PasswordBox)sender).Password;
-
-    private void Diagnostics_Click(object sender, RoutedEventArgs e)
+    public void OpenSettings()
     {
-        var window = _services.GetRequiredService<DiagnosticsWindow>();
+        var window = _services.GetRequiredService<SettingsWindow>();
         window.Owner = this;
         window.ShowDialog();
     }
 
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    public void OpenDiagnostics()
     {
-        if (e.PropertyName == nameof(MainViewModel.Pin) && _viewModel.Pin.Length == 0)
-            PinBox.Clear();
+        var window = _services.GetRequiredService<DiagnosticsWindow>();
+        window.Owner = this;
+        window.ShowDialog();
     }
 }

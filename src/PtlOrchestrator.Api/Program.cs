@@ -19,6 +19,7 @@ builder.Services.AddScoped<IOperatorService, OperatorService>();
 builder.Services.AddScoped<IOperationEventIngestService, OperationEventIngestService>();
 builder.Services.AddScoped<ISessionReportService, SessionReportService>();
 builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<ICartService, CartService>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
@@ -42,6 +43,7 @@ app.MapOperationEventEndpoints();
 app.MapOperatorEndpoints();
 app.MapSessionEndpoints();
 app.MapStationEndpoints();
+app.MapCartEndpoints();
 
 await app.RunAsync();
 

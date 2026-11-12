@@ -4,8 +4,11 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- AioiSystems.Lightstep carica System.Windows.Forms dentro Connect: senza, la connessione al PTL fallisce sempre -->
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>PtlStation</AssemblyName>
     <RootNamespace>PtlOrchestrator.Station</RootNamespace>
+    <ApplicationIcon>..\..\assets\PTL-Orchestrator.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="..\..\assets\PTL-Orchestrator.ico" Link="Assets\PTL-Orchestrator.ico" />
+    <!-- il logo nella schermata di login usa il PNG: dal .ico WPF prenderebbe il fotogramma più piccolo e lo ingrandirebbe -->
+    <Resource Include="..\..\assets\PTL-Orchestrator.png" Link="Assets\PTL-Orchestrator.png" />
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="System.IO" />
+    <!-- Windows Forms serve solo alla DLL Lightstep: i suoi using globali renderebbero ambigui i tipi WPF -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
     <InternalsVisibleTo Include="PtlOrchestrator.Station.Tests" />
   </ItemGroup>
 

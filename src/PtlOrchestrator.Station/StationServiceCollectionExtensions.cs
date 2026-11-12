@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using PtlOrchestrator.Configuration;
 using PtlOrchestrator.DependencyInjection;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Station.Configuration;
@@ -31,6 +32,22 @@ public static class StationServiceCollectionExtensions
 
         services.AddPtlCore(configuration);
 
+        // identificativo della postazione: esplicito in configurazione oppure derivato dalla macchina
+        services.PostConfigure<StationOptions>(o => o.StationId = Identity.StationIdentity.Resolve(o.StationId));
+
+        // server carrelli: il check-in e il rilascio passano sempre dal server
+        services.AddHttpClient(CentralCartAssignmentClient.HttpClientName, (provider, client) =>
+        {
+            var central = provider.GetRequiredService<IOptions<CentralOptions>>().Value;
+            client.BaseAddress = new Uri(central.BaseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(central.TimeoutSeconds);
+            client.DefaultRequestHeaders.Add(ApiKeyHeader, central.ApiKey);
+        });
+        services.AddSingleton<CentralCartAssignmentClient>();
+        services.AddSingleton<ICartAssignmentClient>(sp => sp.GetRequiredService<CentralCartAssignmentClient>());
+        services.AddSingleton<CartCatalogSyncService>();
+        services.AddHostedService(sp => sp.GetRequiredService<CartCatalogSyncService>());
+
         services.AddSingleton<SqliteOperatorCache>();
         services.AddSingleton<IOperatorCache>(sp => sp.GetRequiredService<SqliteOperatorCache>());
         services.AddSingleton<IOperatorDirectory>(sp => sp.GetRequiredService<SqliteOperatorCache>());
@@ -55,6 +72,9 @@ public static class StationServiceCollectionExtensions
         services.AddSingleton<MainWindow>();
         services.AddTransient<DiagnosticsViewModel>();
         services.AddTransient<DiagnosticsWindow>();
+
+        services.AddSingleton<SettingsStore>();
+        services.AddTransient<SettingsWindow>();
 
         services.AddSingleton<EventSyncService>();
         services.AddHostedService(sp => sp.GetRequiredService<EventSyncService>());
@@ -82,6 +102,7 @@ public static class StationServiceCollectionExtensions
             .Validate(o => o.TimeoutSeconds > 0, "Central:TimeoutSeconds deve essere maggiore di zero")
             .Validate(o => o.EventSyncIntervalSeconds > 0, "Central:EventSyncIntervalSeconds deve essere maggiore di zero")
             .Validate(o => o.OperatorSyncIntervalSeconds > 0, "Central:OperatorSyncIntervalSeconds deve essere maggiore di zero")
+            .Validate(o => o.CartCatalogSyncIntervalSeconds > 0, "Central:CartCatalogSyncIntervalSeconds deve essere maggiore di zero")
             .Validate(o => o.EventBatchSize > 0, "Central:EventBatchSize deve essere maggiore di zero")
             .ValidateOnStart();
 

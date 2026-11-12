@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PtlOrchestrator.Domain;
 using PtlOrchestrator.Domain.Operations;
 using PtlOrchestrator.Manager;
 
@@ -25,7 +26,7 @@ public sealed class ScanDispatcher(
             return ScanOutcome.Ignored();
 
         return _sessionContext.HasActiveSession
-            ? await ProcessProductAsync(code, cancellationToken)
+            ? await ProcessSessionScanAsync(code, cancellationToken)
             : await ProcessBadgeAsync(code, cancellationToken);
     }
 
@@ -38,14 +39,18 @@ public sealed class ScanDispatcher(
             : ScanOutcome.LoginRejected(login.Failure!.Value);
     }
 
-    private async Task<ScanOutcome> ProcessProductAsync(string barcode, CancellationToken cancellationToken)
+    /// <summary>Con turno attivo un codice è il check-in di un carrello oppure un prodotto da assegnare.</summary>
+    private async Task<ScanOutcome> ProcessSessionScanAsync(string code, CancellationToken cancellationToken)
     {
         if (!_appProcessingState.TryEnter())
             return ScanOutcome.SystemBusy();
 
         try
         {
-            var assignment = await _cartManager.ProcessBarcode(barcode, cancellationToken);
+            if (_cartManager.IsKnownCart(code))
+                return await ProcessCartCheckInAsync(code, cancellationToken);
+
+            var assignment = await _cartManager.ProcessBarcode(code, cancellationToken);
 
             return assignment.Success
                 ? ScanOutcome.ProductAccepted(assignment)
@@ -53,12 +58,24 @@ public sealed class ScanDispatcher(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError(ex, "Errore processamento barcode {Barcode}", barcode);
+            _logger.LogError(ex, "Errore processamento scansione {Code}", code);
             return ScanOutcome.ProcessingFailed(ex.Message);
         }
         finally
         {
             _appProcessingState.Exit();
         }
+    }
+
+    private async Task<ScanOutcome> ProcessCartCheckInAsync(string cartId, CancellationToken cancellationToken)
+    {
+        var outcome = await _cartManager.CheckInAsync(cartId, cancellationToken);
+
+        return outcome.Result switch
+        {
+            CartCheckInResult.Done => ScanOutcome.CartCheckedIn(outcome.Message),
+            CartCheckInResult.LimitReached => ScanOutcome.CartLimitReached(outcome.Message),
+            _ => ScanOutcome.CartCheckInRejected(outcome.Message)
+        };
     }
 }

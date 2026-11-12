@@ -7,9 +7,8 @@
 | `PtlOrchestrator.Core` | net10.0 | Logica di dominio: carrelli/ceste, `CartManager`, builder comandi PP505, connessione Lightstep, login operatore, `ScanDispatcher`, `ScanListener`. Si registra con `AddPtlCore(configuration)`. |
 | `PtlOrchestrator.Api` | net10.0 (ASP.NET Core) | Backend centrale: EF Core + PostgreSQL, auth con API key, ingest eventi, anagrafica operatori, report turni. |
 | `PtlOrchestrator.Station` | net10.0-windows (WPF) | Applicazione di postazione: SQLite locale (cache operatori + outbox eventi), futura GUI. |
-| `PtlOrchestrator.Console` | net10.0 | Vecchio eseguibile (Worker + console). Ancora con `NullOperationEventSink` e registrazioni manuali; da migrare/dismettere. |
 
-Test in `tests/` (un progetto per ciascuno tranne Console), xUnit.
+Test in `tests/` (un progetto per ciascuno), xUnit.
 
 ## Flusso di una scansione
 ```
@@ -28,7 +27,7 @@ IBarcodeSource ──► ScanListener ──► ScanDispatcher ──► (login 
 
 ## Punti di estensione che l'host deve fornire
 `AddPtlCore` registra tutto tranne:
-- `IBarcodeSource` — sorgente codici (seriale in Station, console nella Console)
+- `IBarcodeSource` — sorgente codici (seriale in Station)
 - `IOperatorDirectory` — anagrafica operatori **locale** (il login deve funzionare senza rete)
 - `IOperationEventSink` — destinazione eventi (Station: outbox durevole)
 

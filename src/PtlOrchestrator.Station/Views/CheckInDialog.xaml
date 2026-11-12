@@ -1,0 +1,21 @@
+<Window x:Class="PtlOrchestrator.Station.Views.CheckInDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Check-in carrello" Width="420" SizeToContent="Height"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FocusManager.FocusedElement="{Binding ElementName=CodeBox}">
+    <StackPanel Margin="24">
+        <TextBlock FontSize="20" FontWeight="SemiBold" Text="Check-in carrello" />
+        <TextBlock Margin="0,4,0,16" Foreground="#6B7280" TextWrapping="Wrap"
+                   Text="Scansiona o digita il numero del carrello." />
+
+        <!-- la pistola termina con Invio: il pulsante predefinito conferma -->
+        <TextBox x:Name="CodeBox" FontSize="24" Padding="8" MaxLength="16" HorizontalContentAlignment="Center" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Padding="14,8" Margin="0,0,8,0" Content="Tastiera" Click="Keyboard_Click" />
+            <Button Padding="14,8" Margin="0,0,8,0" Content="Annulla" IsCancel="True" />
+            <Button Padding="20,8" Content="Check-in" IsDefault="True" Click="Confirm_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

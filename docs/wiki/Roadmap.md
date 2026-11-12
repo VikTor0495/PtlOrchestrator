@@ -32,13 +32,35 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 3.3 Export CSV dei turni (`GET /api/sessions/export`)
 - [x] 3.4 Dockerfile + compose (Api + PostgreSQL), health check `/health` — **da provare**, Docker assente sul PC di sviluppo
 
+## Fase 5 — Flusso operatore (in corso)
+- [x] 5.1 Login con codice operatore digitato a mano (stesso percorso del badge; PIN e lista operatori tolti dalla schermata)
+- [x] 5.2 Check-in carrelli: il turno parte con zero carrelli attivi. Il carrello si identifica con il suo numero seriale (`1`, `2`…); il check-in lo occupa sul server (`POST /api/carts/{codice}/checkin`), che lo censisce con IP, porta e cestelli e rifiuta un carrello già occupato da un'altra postazione (`CartCheckedIn` nel log)
+- [x] 5.3 Check-in durante lo sventagliamento: stessa scansione/input, con turno attivo (test `ScanDispatcherTests`)
+- [x] 5.4 Chiusura: pulsante "Chiudi sventagliamento" (CSV + azzeramento, carrelli restano del turno). Automatica quando un prodotto non trova più spazio
+- [x] 5.5 Logout: rifiutato se ci sono prodotti nei carrelli; altrimenti libera i carrelli sul server e azzera l'interfaccia
+- [x] 5.6 Più controller: ogni carrello ha il proprio IP:porta (dal server); pool di connessioni per endpoint; comandi e attesa pulsanti instradati al controller del carrello. Carrello vuoto rimovibile dalla GUI (`CartReleased`)
+- [x] 5.7 Impostazioni nella GUI, salvate in SQLite locale (`app_settings`) con storico (`app_settings_history`); valgono dal riavvio
+- [x] 5.9 Identificativo postazione: `Station:StationId` se configurato, altrimenti derivato dal `MachineGuid` di Windows (stabile tra reinstallazioni dell'app); la postazione si registra sul server al primo contatto
+- [x] 5.10 Server: tabelle `carts`, `cart_baskets`, `cart_assignments` (indice univoco parziale sui carrelli aperti), migration `AddCartAssignments`, DDL `database/postgres/002_carrelli_e_assegnazioni.sql`. Verificato su Postgres: 10 postazioni in simultanea sullo stesso carrello → una sola 200, nove 409
+- [x] 5.11 Console dismessa, GUI con solo il login prima dell'accesso (carrelli, impostazioni e diagnostica compaiono dopo), input manuale dei codici sempre disponibile
+- [x] 5.12 Simulatore PTL (`tools/ptl-simulator`): modalità `--headless`, operazioni `state` e `press` sulla porta di controllo, risposta in frame (la DLL la richiede), dialetto Station tollerante (`--strict` per rifiutarlo)
+
+### Da fare alla prossima sessione
+- [ ] **Commit e push** del lavoro non ancora committato (Console rimossa, GUI login-first, `UseWindowsForms` nella Station, simulatore). Prima `dotnet test PtlOrchestrator.sln`: chiudere Api, Station e simulatore, che bloccano i DLL
+- [ ] **Test manuale** (non ancora fatto): Api + simulatore + Station; login `OP001`, check-in carrello `10` (127.0.0.1:15003), scansione prodotto, lampada nel simulatore, click per CONFIRM, rimozione carrello, chiusura sventagliamento, logout
+- [ ] **Test d'integrazione DLL ↔ simulatore** (`PtlSimulatorIntegrationTests`, oggi in Skip): la DLL Lightstep carica `System.Windows.Forms` dentro `Connect`, quindi vanno spostati in `Station.Tests` (net10.0-windows) e va capito perché `SendCommand` si blocca nel test host (da console funziona dopo la risposta in frame)
+- [ ] **Formato dei comandi**: `Pp505Builder` scrive i blocchi `m1/m2/m3` in forma abbreviata, diversa dai 3 byte dei manuali. Il simulatore li accetta come "dialetto Station" ma il controller reale potrebbe rifiutarli. Verificare con Reflexer/controller. Verificare anche il formato dell'evento `t` (pulsante)
+- [ ] **Licenza Lightstep**: `Lightstep:LicenzeKey` va inserita nelle impostazioni della Station (non è nel repo); il simulatore accetta anche la chiave vuota
+- [ ] **Pulizia `ptl_test`**: carrelli di prova 1, 2, 3, 10 e relative assegnazioni; **cambiare la password** del ruolo `ptl_test` (è su GitHub in `docs/wiki/Setup-e-Build.md`) e togliere la riga dalla wiki
+- [x] 5.8 Icona dell'eseguibile Station (`assets/PTL-Orchestrator.ico`, in `ApplicationIcon` e nella finestra)
+
 ## Fase 4 — Chiusura
-- [ ] 4.1 **Decisione aperta**: la Console resta com'è (storica, senza operatori né DB). Migrarla su `AddPtlCore` ne cambierebbe il comportamento (login obbligatorio). Proposta: dismetterla dopo la validazione sul campo della Station
+- [x] 4.1 Console dismessa (decisione dell'utente): progetto rimosso dalla soluzione e dal repo; resta nella storia git. Il docker compose contiene solo PostgreSQL e Api
 - [x] 4.2 Contratto client Station ↔ Api provato end-to-end (`StationClientContractTests`: invio, duplicati, rifiuti, chiave errata, sync incrementale operatori). Manca un test con la GUI e la porta seriale reali: richiede hardware
 - [x] 4.3 Publish self-contained della Station provato (EXE singolo, parte e crea data/ e logs/); vedi Setup e Build
 - [x] 4.4 README aggiornato con rimando alla wiki. **Merge su `master`: da fare a validazione sul campo conclusa**
 
-## Da validare sul campo (non verificabile da software)
+## Da validare sul campo (non verificabile da software; rinviate dall'utente al collaudo, restano aperte)
 - [ ] Postazione con PTL Lightstep reale: connessione, accensione lampade, conferma pulsante, reset
 - [ ] Pistola barcode su porta seriale reale (`SerialScanner`): terminatori CR/LF, riconnessione a cavo staccato
 - [ ] Aspetto e usabilità della GUI su monitor/touch reale (testata solo l'avvio e la logica dei ViewModel)

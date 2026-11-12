@@ -1,12 +1,12 @@
-using System.Threading;
-using System.Threading.Tasks;
 using PtlOrchestrator.Domain;
 
 namespace PtlOrchestrator.Service;
 
 public interface IPtlCommandService
 {
-    Task SendRawAsync(string command, CancellationToken cancellationToken);
+    /// <summary>Invia un comando PP505 al controller indicato (nullo = controller predefinito).</summary>
+    Task SendRawAsync(string command, PtlEndpoint? endpoint, CancellationToken cancellationToken);
 
-    Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken);
+    /// <summary>Attende la pressione di un pulsante dal controller indicato e restituisce il modulo premuto.</summary>
+    Task<string> WaitForButtonAsync(string expectedModule, PtlEndpoint? endpoint, CancellationToken cancellationToken);
 }

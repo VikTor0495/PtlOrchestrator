@@ -18,6 +18,9 @@ internal sealed class TempDatabase : IDisposable
 
     public LocalDatabase Database { get; }
 
+    /// <summary>Percorso del file SQLite, per leggerlo direttamente nei test.</summary>
+    public string DatabasePath => Path.Combine(_directory, "station.db");
+
     /// <summary>Una nuova istanza sullo stesso file: simula il riavvio dell'applicazione.</summary>
     public LocalDatabase CreateDatabase()
         => new(Options.Create(new LocalDataOptions { DatabasePath = Path.Combine(_directory, "station.db") }));

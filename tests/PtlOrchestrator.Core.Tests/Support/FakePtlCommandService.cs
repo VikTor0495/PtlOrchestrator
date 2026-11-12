@@ -1,3 +1,4 @@
+using PtlOrchestrator.Domain;
 using PtlOrchestrator.Service;
 
 namespace PtlOrchestrator.Core.Tests.Support;
@@ -13,6 +14,8 @@ internal sealed class FakePtlCommandService : IPtlCommandService
 
     public List<string> SentCommands { get; } = [];
 
+    public List<PtlEndpoint?> SentTo { get; } = [];
+
     public List<string> WaitedModules { get; } = [];
 
     public Exception? SendFailure { get; set; }
@@ -23,7 +26,7 @@ internal sealed class FakePtlCommandService : IPtlCommandService
             _buttonPresses.Enqueue(module);
     }
 
-    public Task SendRawAsync(string command, CancellationToken cancellationToken)
+    public Task SendRawAsync(string command, PtlEndpoint? endpoint, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -31,10 +34,11 @@ internal sealed class FakePtlCommandService : IPtlCommandService
             throw SendFailure;
 
         SentCommands.Add(command);
+        SentTo.Add(endpoint);
         return Task.CompletedTask;
     }
 
-    public async Task<string> WaitForButtonAsync(string expectedModule, CancellationToken cancellationToken)
+    public async Task<string> WaitForButtonAsync(string expectedModule, PtlEndpoint? endpoint, CancellationToken cancellationToken)
     {
         WaitedModules.Add(expectedModule);
 

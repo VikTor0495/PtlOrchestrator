@@ -27,6 +27,9 @@ public static class ScanMessageFormatter
             ScanOutcomeKind.ProductAccepted => new(MessageSeverity.Success, FormatAccepted(scannedCode, outcome.Assignment!)),
             ScanOutcomeKind.ProductRejected => new(MessageSeverity.Error, outcome.Message ?? $"Prodotto {scannedCode} rifiutato"),
             ScanOutcomeKind.ProcessingFailed => new(MessageSeverity.Error, $"Errore durante l'operazione: {outcome.Message}"),
+            ScanOutcomeKind.CartCheckedIn => new(MessageSeverity.Success, outcome.Message!),
+            ScanOutcomeKind.CartCheckInRejected => new(MessageSeverity.Warning, outcome.Message!),
+            ScanOutcomeKind.CartLimitReached => new(MessageSeverity.Warning, outcome.Message!),
             _ => null
         };
 

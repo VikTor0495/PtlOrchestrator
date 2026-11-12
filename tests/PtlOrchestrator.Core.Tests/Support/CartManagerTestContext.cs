@@ -3,7 +3,10 @@ using Microsoft.Extensions.Options;
 using PtlOrchestrator.Builder;
 using PtlOrchestrator.Configuration;
 using PtlOrchestrator.Domain;
+using PtlOrchestrator.Domain.Operations;
 using PtlOrchestrator.Manager.Impl;
+using PtlOrchestrator.Service;
+using PtlOrchestrator.Service.Impl;
 
 namespace PtlOrchestrator.Core.Tests.Support;
 
@@ -28,6 +31,9 @@ internal sealed class CartManagerTestContext
 
         var limits = new Dictionary<string, int> { [Barcode] = barcodeLimit };
 
+        Session = new OperatorSessionContext();
+        Session.Begin(new OperatorSession(Guid.NewGuid(), Guid.NewGuid(), "Test", DateTimeOffset.UtcNow));
+
         Manager = new CartManager(
             Container,
             Ptl,
@@ -35,8 +41,15 @@ internal sealed class CartManagerTestContext
             new StubBasketLimitService(limits),
             Recorder,
             Options.Create(new TimeoutOptions { Minutes = timeoutMinutes }),
+            new NoCartAssignmentClient(),
+            new LightstepConnectionService(
+                Options.Create(new LightstepOptions()), NullLogger<LightstepConnectionService>.Instance),
+            Session,
+            Options.Create(new StationOptions { StationId = "ST-TEST" }),
             NullLogger<CartManager>.Instance);
     }
+
+    public OperatorSessionContext Session { get; }
 
     public string[] BasketIds { get; }
 

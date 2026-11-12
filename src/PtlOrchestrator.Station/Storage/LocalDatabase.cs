@@ -32,6 +32,22 @@ public sealed class LocalDatabase
         );
         CREATE INDEX IF NOT EXISTS ix_cached_operators_badge ON cached_operators (badge_code);
 
+        -- impostazioni modificate dalla GUI: sovrascrivono appsettings.json all'avvio
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key        TEXT PRIMARY KEY,
+            value      TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        -- storico di ogni modifica (valore precedente e nuovo), per tracciare chi ha cambiato cosa e quando
+        CREATE TABLE IF NOT EXISTS app_settings_history (
+            seq        INTEGER PRIMARY KEY AUTOINCREMENT,
+            key        TEXT NOT NULL,
+            old_value  TEXT,
+            new_value  TEXT NOT NULL,
+            changed_at TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS sync_state (
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL

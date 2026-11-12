@@ -1,0 +1,52 @@
+<UserControl x:Class="PtlOrchestrator.Station.Views.LoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="#F3F4F6">
+        <Border Width="440" Padding="36" Background="White" CornerRadius="10"
+                BorderBrush="#D1D5DB" BorderThickness="1"
+                VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel>
+                <Image Source="/Assets/PTL-Orchestrator.png" Width="96" Height="96" HorizontalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" SnapsToDevicePixels="True" />
+                <TextBlock Margin="0,12,0,0" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Text="PTL Station" />
+                <TextBlock Margin="0,4,0,24" Foreground="#6B7280" HorizontalAlignment="Center"
+                           Text="Scansiona o digita il codice operatore" />
+
+                <TextBox Padding="10" FontSize="22" MaxLength="64" HorizontalContentAlignment="Center"
+                         Text="{Binding CodeInput, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SubmitCodeCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Padding="16,10" FontSize="16" Content="Entra" Command="{Binding SubmitCodeCommand}" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="16,6" FontSize="24" FontFamily="Segoe UI Symbol"
+                            Content="⌨" ToolTip="Tastiera su schermo" Click="Keyboard_Click" />
+                </Grid>
+
+                <!-- esito dell'accesso (operatore sconosciuto, non attivo, ...) -->
+                <TextBlock Margin="0,16,0,0" FontSize="15" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="{Binding LastMessage.Text}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#6B7280" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding LastMessage.Severity}" Value="Error">
+                                    <Setter Property="Foreground" Value="#B91C1C" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding LastMessage.Severity}" Value="Warning">
+                                    <Setter Property="Foreground" Value="#B45309" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

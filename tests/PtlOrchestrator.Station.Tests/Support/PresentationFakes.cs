@@ -1,5 +1,6 @@
 using AioiSystems.Lightstep;
 using PtlOrchestrator.Contracts.Operations;
+using PtlOrchestrator.Domain;
 using PtlOrchestrator.Service;
 using PtlOrchestrator.Station.Presentation;
 using PtlOrchestrator.Station.Storage;
@@ -37,11 +38,24 @@ internal sealed class FakeLightstep : ILightstepConnectionService
         return Task.CompletedTask;
     }
 
-    public EthernetController GetController() => throw new NotSupportedException();
+    public bool IsConnectedTo(PtlEndpoint endpoint) => IsConnected;
+
+    public Task EnsureConnectedAsync(PtlEndpoint endpoint, CancellationToken ct) => EnsureConnectedAsync(ct);
+
+    public Task<bool> TryConnectAsync(PtlEndpoint endpoint, CancellationToken ct)
+    {
+        Calls.Add("try-connect " + endpoint);
+        IsConnected = true;
+        return Task.FromResult(true);
+    }
+
+    public EthernetController GetController(PtlEndpoint? endpoint = null) => throw new NotSupportedException();
 
     public void Disconnect()
     {
         Calls.Add("disconnect");
         IsConnected = false;
     }
+
+    public void Disconnect(PtlEndpoint endpoint) => Disconnect();
 }

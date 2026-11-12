@@ -45,6 +45,8 @@ public sealed class StationCompositionTests : IDisposable
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         var services = new ServiceCollection();
         services.AddLogging();
+        // l'host fornisce IConfiguration da sé: nei test va registrato a mano
+        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(configuration);
         services.AddStation(configuration);
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

@@ -8,7 +8,10 @@ public enum ScanOutcomeKind
     SystemBusy,
     ProductAccepted,
     ProductRejected,
-    ProcessingFailed
+    ProcessingFailed,
+    CartCheckedIn,
+    CartCheckInRejected,
+    CartLimitReached
 }
 
 /// <summary>
@@ -57,4 +60,14 @@ public sealed class ScanOutcome
 
     public static ScanOutcome ProcessingFailed(string message)
         => new(ScanOutcomeKind.ProcessingFailed, message);
+
+    public static ScanOutcome CartCheckedIn(string message)
+        => new(ScanOutcomeKind.CartCheckedIn, message);
+
+    public static ScanOutcome CartCheckInRejected(string message)
+        => new(ScanOutcomeKind.CartCheckInRejected, message);
+
+    /// <summary>Check-in oltre il numero massimo di carrelli: la GUI lo segnala con un popup.</summary>
+    public static ScanOutcome CartLimitReached(string message)
+        => new(ScanOutcomeKind.CartLimitReached, message);
 }

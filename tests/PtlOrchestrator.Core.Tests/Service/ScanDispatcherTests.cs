@@ -169,4 +169,53 @@ public class ScanDispatcherTests
 
         Assert.False(_processingState.IsBusy);
     }
+
+    [Fact]
+    public async Task Dispatch_WithSession_AndKnownCartCode_ChecksTheCartIn()
+    {
+        StartSession();
+        _cartManager.KnownCarts.Add("1");
+
+        var outcome = await _dispatcher.DispatchAsync("1", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.CartCheckedIn, outcome.Kind);
+        Assert.Equal(["1"], _cartManager.CheckedInCarts);
+        Assert.Empty(_cartManager.ProcessedBarcodes);
+    }
+
+    [Fact]
+    public async Task Dispatch_WhenCartIsAlreadyActive_ReportsItAsRejectedCheckIn()
+    {
+        StartSession();
+        _cartManager.KnownCarts.Add("1");
+        _cartManager.NextCheckInResult = CartCheckInResult.AlreadyActive;
+
+        var outcome = await _dispatcher.DispatchAsync("1", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.CartCheckInRejected, outcome.Kind);
+        Assert.Contains("già attivo", outcome.Message);
+    }
+
+    [Fact]
+    public async Task Dispatch_WithoutSession_KnownCartCodeIsNotACheckIn()
+    {
+        _cartManager.KnownCarts.Add("1");
+
+        var outcome = await _dispatcher.DispatchAsync("1", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.LoginRejected, outcome.Kind);
+        Assert.Empty(_cartManager.CheckedInCarts);
+    }
+
+    [Fact]
+    public async Task Dispatch_WhenTheCartLimitIsReached_ReportsItSeparately()
+    {
+        StartSession();
+        _cartManager.KnownCarts.Add("5");
+        _cartManager.NextCheckInResult = CartCheckInResult.LimitReached;
+
+        var outcome = await _dispatcher.DispatchAsync("5", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.CartLimitReached, outcome.Kind);
+    }
 }

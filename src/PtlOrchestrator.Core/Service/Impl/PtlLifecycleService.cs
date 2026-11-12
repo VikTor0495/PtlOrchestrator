@@ -78,7 +78,7 @@ public sealed class PtlLifecycleService(
 
         TryRun("scrittura del report CSV", _cartManager.WriteCsvReport);
 
-        if (_connectionService.IsConnected)
+        if (_cartManager.ActiveCartIds().Count > 0)
         {
             try
             {
@@ -96,8 +96,7 @@ public sealed class PtlLifecycleService(
 
     private async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        await _connectionService.EnsureConnectedAsync(cancellationToken);
-
+        // nessun controller da connettere all'avvio: ogni carrello si collega al proprio controller al check-in
         _basketLimitService.Load(Path.Combine(AppContext.BaseDirectory, _limitOptions.FileName), cancellationToken);
 
         await _cartManager.ResetAll(cancellationToken);

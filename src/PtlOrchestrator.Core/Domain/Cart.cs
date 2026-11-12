@@ -1,7 +1,11 @@
 namespace PtlOrchestrator.Domain;
-public sealed class Cart(string cartId, IEnumerable<Basket> baskets)
+public sealed class Cart(string cartId, IEnumerable<Basket> baskets, PtlEndpoint? endpoint = null)
 {
     public string CartId { get; } = cartId;
+
+    /// <summary>Controller a cui sono collegati i cestelli. Nullo = controller predefinito della configurazione.</summary>
+    public PtlEndpoint? Endpoint { get; } = endpoint;
+
     private readonly List<Basket> _baskets = [.. baskets];
 
     public IReadOnlyCollection<Basket> GetBaskets => _baskets;
