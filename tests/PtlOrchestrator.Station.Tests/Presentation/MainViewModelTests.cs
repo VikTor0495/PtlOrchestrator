@@ -241,20 +241,22 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task Logout_WithProductsInCarts_IsRefusedAndKeepsTheTurn()
+    public async Task Logout_WithProductsInCarts_GeneratesTheReportFirstThenDetachesTheCarts()
     {
         _session.Begin(Session());
         _scans.Raise("X", ScanOutcome.Ignored());
         _cartManager.Items = true;
+        _cartManager.Active.Add("1");
 
         await _viewModel.LogoutCommand.ExecuteAsync(null);
 
-        Assert.True(_viewModel.IsLoggedIn);
-        Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+        Assert.Equal(1, _cartManager.CloseCount);
+        Assert.Equal(["1"], _cartManager.Released);
+        Assert.False(_viewModel.IsLoggedIn);
     }
 
     [Fact]
-    public async Task Logout_ReleasesEveryActiveCartThenEndsTurn()
+    public async Task Logout_WithEmptyCarts_DoesNotGenerateAReportButStillDetachesThem()
     {
         _session.Begin(Session());
         _scans.Raise("X", ScanOutcome.Ignored());
@@ -262,13 +264,13 @@ public sealed class MainViewModelTests : IDisposable
 
         await _viewModel.LogoutCommand.ExecuteAsync(null);
 
+        Assert.Equal(0, _cartManager.CloseCount);
         Assert.Equal(["1", "2"], _cartManager.Released);
         Assert.False(_viewModel.IsLoggedIn);
-        Assert.Null(_viewModel.OperatorName);
     }
 
     [Fact]
-    public async Task Logout_WhenACartCannotBeReleased_KeepsTheTurn()
+    public async Task Logout_WhenACartCannotBeDetached_KeepsTheTurn()
     {
         _session.Begin(Session());
         _scans.Raise("X", ScanOutcome.Ignored());
@@ -279,6 +281,59 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.True(_viewModel.IsLoggedIn);
         Assert.Equal(MessageSeverity.Error, _viewModel.LastMessage.Severity);
+    }
+
+    [Fact]
+    public async Task ScanningWhileAProductIsBeingPlaced_AsksToPlaceTheFirstOneAndNamesIt()
+    {
+        _session.Begin(Session());
+        PopupRequest? popup = null;
+        _viewModel.PopupRequested += (_, request) => popup = request;
+        _viewModel.CodeInput = "2222";
+        _dispatcher.NextOutcome = ScanOutcome.ProductInProgress("1111");
+
+        await _viewModel.SubmitCodeCommand.ExecuteAsync(null);
+
+        Assert.NotNull(popup);
+        Assert.Contains("1111", popup!.Message);
+        Assert.True(popup.ClosesWhenProductIsPlaced);
+        Assert.Equal(MessageSeverity.Warning, _viewModel.LastMessage.Severity);
+    }
+
+    [Fact]
+    public void ScanningWhileAProductIsBeingPlaced_FromTheGun_RaisesThePopupToo()
+    {
+        PopupRequest? popup = null;
+        _viewModel.PopupRequested += (_, request) => popup = request;
+
+        _scans.Raise("2222", ScanOutcome.ProductInProgress("1111"));
+
+        Assert.Contains("1111", popup!.Message);
+    }
+
+    [Fact]
+    public void WhenTheProductIsPlaced_ThePopupIsDismissed()
+    {
+        var dismissed = 0;
+        _viewModel.PopupDismissRequested += (_, _) => dismissed++;
+        var assignment = _carts.AssignItem("8000123", 3);
+
+        _scans.Raise("8000123", ScanOutcome.ProductAccepted(assignment));
+
+        Assert.Equal(1, dismissed);
+    }
+
+    [Fact]
+    public async Task CloseWork_KeepsTheCartsAttached()
+    {
+        _session.Begin(Session());
+        _scans.Raise("X", ScanOutcome.Ignored());
+        _cartManager.Active.Add("1");
+
+        await _viewModel.CloseWorkCommand.ExecuteAsync(null);
+
+        Assert.Empty(_cartManager.Released);
+        Assert.Equal(["1"], _cartManager.Active);
     }
 
     [Fact]
@@ -323,7 +378,7 @@ public sealed class MainViewModelTests : IDisposable
     {
         _session.Begin(Session());
         string? popup = null;
-        _viewModel.PopupRequested += (_, message) => popup = message;
+        _viewModel.PopupRequested += (_, request) => popup = request.Message;
         _viewModel.CodeInput = "5";
         _dispatcher.NextOutcome = ScanOutcome.CartLimitReached("Massimo 4 carrelli per volta");
 
@@ -337,7 +392,7 @@ public sealed class MainViewModelTests : IDisposable
     public void CartLimit_FromTheScanner_RaisesAPopupToo()
     {
         string? popup = null;
-        _viewModel.PopupRequested += (_, message) => popup = message;
+        _viewModel.PopupRequested += (_, request) => popup = request.Message;
 
         _scans.Raise("5", ScanOutcome.CartLimitReached("Massimo 4 carrelli per volta"));
 

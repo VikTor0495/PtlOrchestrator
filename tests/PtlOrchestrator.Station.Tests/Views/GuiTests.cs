@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -190,6 +191,47 @@ public sealed class GuiTests
         }
     }
 
+    // ---------------------------------------------------------------- anteprime
+
+    /// <summary>Disegna le schermate vere in PNG (login e lavoro con 0, 1, 2, 3 e 4 carrelli) per guardarle senza aprire il programma.</summary>
+    [PreviewFact]
+    public void SavePreviews()
+    {
+        var directory = Environment.GetEnvironmentVariable(PreviewFactAttribute.VariableName)!;
+        Directory.CreateDirectory(directory);
+
+        RunOnSta(() =>
+        {
+            SavePng(new LoginView { DataContext = new Harness().ViewModel }, 1100, 720, Path.Combine(directory, "login.png"));
+
+            for (var carts = 0; carts <= 4; carts++)
+            {
+                // dal secondo carrello in poi il primo contiene un prodotto, per vedere anche i cestelli occupati
+                var harness = new Harness(cartCount: carts, firstCartHasProduct: carts >= 2);
+                harness.Login();
+                SavePng(new WorkView { DataContext = harness.ViewModel }, 1100, 720, Path.Combine(directory, $"lavoro-{carts}-carrelli.png"));
+            }
+        });
+    }
+
+    private static void SavePng(FrameworkElement view, double width, double height, string path)
+    {
+        var host = new Grid { Width = width, Height = height, Background = Brushes.White };
+        host.Children.Add(view);
+        host.Measure(new Size(width, height));
+        host.Arrange(new Rect(0, 0, width, height));
+        host.UpdateLayout();
+        PumpDispatcher();
+
+        var bitmap = new RenderTargetBitmap((int)width, (int)height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(host);
+
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream = System.IO.File.Create(path);
+        encoder.Save(stream);
+    }
+
     // ---------------------------------------------------------------- schermate
 
     [Fact]
@@ -318,5 +360,17 @@ public sealed class GuiTests
             Assert.Contains("Esci", buttons);
             Assert.Contains("⌨", buttons);
         });
+    }
+}
+
+/// <summary>Il test gira solo se è impostata PTL_PREVIEW_DIR: salva le schermate come immagini PNG per guardarle.</summary>
+public sealed class PreviewFactAttribute : FactAttribute
+{
+    public const string VariableName = "PTL_PREVIEW_DIR";
+
+    public PreviewFactAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(VariableName)))
+            Skip = $"Imposta {VariableName} con la cartella dove salvare le anteprime della GUI";
     }
 }

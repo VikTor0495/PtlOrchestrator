@@ -30,6 +30,10 @@ public static class PtlCoreServiceCollectionExtensions
         services.AddSingleton<ICartManager, CartManager>();
         // la postazione sostituisce questa implementazione con il client HTTP del server carrelli
         services.TryAddSingleton<ICartAssignmentClient, NoCartAssignmentClient>();
+        // la postazione sostituisce questa implementazione con un archivio su disco dei carrelli attivi
+        services.TryAddSingleton<IActiveCartStore, NullActiveCartStore>();
+        services.AddSingleton<ActiveCartRestorer>();
+        services.AddSingleton<IShutdownIntent, ShutdownIntent>();
         services.AddSingleton<ILightstepConnectionService, LightstepConnectionService>();
         services.AddSingleton<IPtlCommandService, LightstepPtlCommandService>();
         services.AddSingleton<ICartReportWriter, CsvCartReportWriter>();

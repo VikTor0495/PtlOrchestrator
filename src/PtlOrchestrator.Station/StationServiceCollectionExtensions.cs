@@ -48,6 +48,10 @@ public static class StationServiceCollectionExtensions
         services.AddSingleton<CartCatalogSyncService>();
         services.AddHostedService(sp => sp.GetRequiredService<CartCatalogSyncService>());
 
+        // i carrelli attivi sopravvivono a chiusure e riavvii: si scollegano solo se l'operatore lo fa
+        services.AddSingleton<IActiveCartStore, SqliteActiveCartStore>();
+        services.AddHostedService<CartRestoreService>();
+
         services.AddSingleton<SqliteOperatorCache>();
         services.AddSingleton<IOperatorCache>(sp => sp.GetRequiredService<SqliteOperatorCache>());
         services.AddSingleton<IOperatorDirectory>(sp => sp.GetRequiredService<SqliteOperatorCache>());

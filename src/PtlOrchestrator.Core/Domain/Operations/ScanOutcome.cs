@@ -8,6 +8,7 @@ public enum ScanOutcomeKind
     SystemBusy,
     ProductAccepted,
     ProductRejected,
+    ProductInProgress,
     ProcessingFailed,
     CartCheckedIn,
     CartCheckInRejected,
@@ -57,6 +58,10 @@ public sealed class ScanOutcome
 
     public static ScanOutcome ProductRejected(CartAssignmentResult assignment)
         => new(ScanOutcomeKind.ProductRejected, assignment.Reason, assignment: assignment);
+
+    /// <summary>Nuova scansione mentre un prodotto non è ancora stato posizionato: va prima completato quello.</summary>
+    public static ScanOutcome ProductInProgress(string barcode)
+        => new(ScanOutcomeKind.ProductInProgress, $"Posiziona prima il prodotto {barcode} già scansionato, poi scansiona il successivo");
 
     public static ScanOutcome ProcessingFailed(string message)
         => new(ScanOutcomeKind.ProcessingFailed, message);

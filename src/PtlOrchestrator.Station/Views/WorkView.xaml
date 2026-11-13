@@ -171,7 +171,12 @@
 
         <!-- stato del sistema e accesso a impostazioni e diagnostica -->
         <StatusBar Grid.Row="3" Margin="0,12,0,0">
-            <StatusBarItem Content="{Binding StationId, StringFormat='Postazione {0}'}" />
+            <!-- identificativo di questa postazione (il formato in Content non si applicava: ora è un testo vero) -->
+            <StatusBarItem>
+                <TextBlock ToolTip="Nome con cui questa postazione è riconosciuta dal server">
+                    <Run Text="Postazione: " FontWeight="SemiBold" /><Run Text="{Binding StationId, Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
             <Separator />
             <StatusBarItem>
                 <TextBlock>
@@ -190,7 +195,11 @@
                 </TextBlock>
             </StatusBarItem>
             <Separator />
-            <StatusBarItem Content="{Binding PendingEvents, StringFormat='Eventi da inviare: {0}'}" />
+            <StatusBarItem>
+                <TextBlock ToolTip="Operazioni svolte che il server non ha ancora ricevuto">
+                    <Run Text="Dati da inviare: " /><Run Text="{Binding PendingEvents, Mode=OneWay}" />
+                </TextBlock>
+            </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
                     <Button Padding="10,2" Margin="0,0,8,0" Content="Impostazioni…" Click="Settings_Click" />

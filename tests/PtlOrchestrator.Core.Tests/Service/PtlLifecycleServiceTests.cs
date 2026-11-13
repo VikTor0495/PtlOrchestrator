@@ -75,7 +75,11 @@ public sealed class PtlLifecycleServiceTests
 
         public Task<CartCheckInOutcome> CheckInAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartId, CancellationToken cancellationToken)
+        {
+            steps.Log.Add($"release:{cartId}");
+            return Task.FromResult(new CartReleaseOutcome(true, "ok"));
+        }
 
         public IReadOnlyList<string> ActiveCartIds() => ActiveCarts;
 
@@ -105,6 +109,7 @@ public sealed class PtlLifecycleServiceTests
     private readonly FakeCarts _carts;
     private readonly AppProcessingState _processing = new(NullLogger<AppProcessingState>.Instance);
     private readonly FakeTimeProvider _time = new();
+    private readonly ShutdownIntent _intent = new();
     private readonly PtlLifecycleService _service;
 
     public PtlLifecycleServiceTests()
@@ -113,7 +118,7 @@ public sealed class PtlLifecycleServiceTests
         _limits = new FakeLimits(_steps);
         _carts = new FakeCarts(_steps);
         _service = new PtlLifecycleService(
-            _connection, _limits, _carts, _processing,
+            _connection, _limits, _carts, _processing, _intent,
             Options.Create(new BarcodeLimitOptions { BasketId = "x", FileName = "limiti.csv", BarcodeColumnIndex = 0, LimitColumnIndex = 1 }),
             _time, NullLogger<PtlLifecycleService>.Instance);
     }
@@ -183,7 +188,7 @@ public sealed class PtlLifecycleServiceTests
     }
 
     [Fact]
-    public async Task Stop_WithActiveCarts_WritesReportResetsAndDisconnects()
+    public async Task Stop_WithActiveCarts_WritesReportResetsReleasesThemAndDisconnects()
     {
         await _service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => _service.IsReady);
@@ -192,8 +197,23 @@ public sealed class PtlLifecycleServiceTests
 
         await _service.StopAsync(CancellationToken.None);
 
-        Assert.Equal(["report", "reset", "disconnect"], _steps.Log);
+        Assert.Equal(["report", "reset", "release:1", "disconnect"], _steps.Log);
         Assert.False(_service.IsReady);
+    }
+
+    [Fact]
+    public async Task Stop_ForARestartFromSettings_KeepsTheCartsAttached()
+    {
+        await _service.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => _service.IsReady);
+        _carts.ActiveCarts.Add("1");
+        _intent.KeepCartsAttached = true;
+        _steps.Log.Clear();
+
+        await _service.StopAsync(CancellationToken.None);
+
+        // nessun "release": la postazione riprende i carrelli alla riapertura
+        Assert.Equal(["report", "reset", "disconnect"], _steps.Log);
     }
 
     [Fact]

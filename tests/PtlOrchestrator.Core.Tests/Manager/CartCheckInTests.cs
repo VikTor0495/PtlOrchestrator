@@ -68,12 +68,24 @@ public class CartCheckInTests
         public void Disconnect(PtlEndpoint endpoint) { }
     }
 
+    private sealed class FakeStore : IActiveCartStore
+    {
+        public List<string> Saved { get; private set; } = [];
+        public Task SaveAsync(IReadOnlyCollection<string> cartCodes, CancellationToken cancellationToken)
+        {
+            Saved = [.. cartCodes];
+            return Task.CompletedTask;
+        }
+        public Task<IReadOnlyList<string>> LoadAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<string>>(Saved);
+    }
+
     private static readonly PtlEndpoint Controller = new("192.168.1.20", 15010);
 
     private readonly CartContainer _container = new([], activeCartIds: []);
     private readonly FakePtlCommandService _ptl = new();
     private readonly FakeAssignmentClient _client = new();
     private readonly FakeConnections _connections = new();
+    private readonly FakeStore _store = new();
     private readonly CartManager _manager;
 
     public CartCheckInTests()
@@ -92,6 +104,7 @@ public class CartCheckInTests
             _connections,
             session,
             Options.Create(new StationOptions { StationId = "ST-01" }),
+            _store,
             NullLogger<CartManager>.Instance);
     }
 
@@ -234,6 +247,34 @@ public class CartCheckInTests
         Assert.Equal(CartCheckInResult.LimitReached, outcome.Result);
         Assert.Contains("Massimo 4", outcome.Message);
         Assert.Equal(CartContainer.MaxActiveCarts, _client.ClaimCalls);
+    }
+
+    [Fact]
+    public async Task CheckInAndRelease_KeepTheStoredListOfActiveCartsUpToDate()
+    {
+        GrantCart("1", "0001");
+        await _manager.CheckInAsync("1", CancellationToken.None);
+        GrantCart("2", "0002");
+        await _manager.CheckInAsync("2", CancellationToken.None);
+        Assert.Equal(["1", "2"], _store.Saved);
+
+        await _manager.ReleaseCartAsync("1", CancellationToken.None);
+
+        Assert.Equal(["2"], _store.Saved);
+    }
+
+    [Fact]
+    public async Task ResetAll_DoesNotDetachAnyCart()
+    {
+        GrantCart("1", "0001");
+        await _manager.CheckInAsync("1", CancellationToken.None);
+
+        await _manager.CloseWorkAsync(CancellationToken.None);
+
+        // il reset azzera i prodotti ma i carrelli restano attivi e collegati al server
+        Assert.True(_container.IsActive("1"));
+        Assert.Empty(_client.Released);
+        Assert.Equal(["1"], _store.Saved);
     }
 
     [Fact]

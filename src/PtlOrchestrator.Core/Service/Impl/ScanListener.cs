@@ -45,7 +45,10 @@ public sealed class ScanListener(
                 if (_appProcessingState.IsBusy || !_pendingScans.Writer.TryWrite(scannedCode))
                 {
                     _logger.LogWarning("Scansione '{Code}' ignorata: sistema occupato", scannedCode);
-                    Publish(scannedCode, ScanOutcome.SystemBusy());
+
+                    // se è in corso un prodotto, l'operatore deve sapere quale posizionare prima di proseguire
+                    var inProgress = _scanDispatcher.ProductInProgress;
+                    Publish(scannedCode, inProgress is not null ? ScanOutcome.ProductInProgress(inProgress) : ScanOutcome.SystemBusy());
                 }
             }
         }

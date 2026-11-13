@@ -218,4 +218,39 @@ public class ScanDispatcherTests
 
         Assert.Equal(ScanOutcomeKind.CartLimitReached, outcome.Kind);
     }
+
+    [Fact]
+    public async Task Dispatch_WhileAProductIsBeingPlaced_ReportsWhichOneIsInProgress()
+    {
+        StartSession();
+        var cart = AnyCart();
+        var gate = new TaskCompletionSource<CartAssignmentResult>();
+        _cartManager.OnProcessBarcode = _ => gate.Task;
+
+        var first = _dispatcher.DispatchAsync("1111", CancellationToken.None);
+        var second = await _dispatcher.DispatchAsync("2222", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.ProductInProgress, second.Kind);
+        Assert.Contains("1111", second.Message);
+        Assert.Equal("1111", _dispatcher.ProductInProgress);
+        Assert.Equal(["1111"], _cartManager.ProcessedBarcodes);
+
+        gate.SetResult(CartAssignmentResult.NewItem(cart, cart.GetBaskets.Single()));
+        await first;
+
+        Assert.Null(_dispatcher.ProductInProgress);
+    }
+
+    [Fact]
+    public async Task Dispatch_AfterThePreviousProductIsPlaced_AcceptsTheNextOne()
+    {
+        StartSession();
+        var cart = AnyCart();
+        _cartManager.OnProcessBarcode = _ => Task.FromResult(CartAssignmentResult.NewItem(cart, cart.GetBaskets.Single()));
+
+        await _dispatcher.DispatchAsync("1111", CancellationToken.None);
+        var next = await _dispatcher.DispatchAsync("2222", CancellationToken.None);
+
+        Assert.Equal(ScanOutcomeKind.ProductAccepted, next.Kind);
+    }
 }

@@ -11,6 +11,9 @@ using PtlOrchestrator.Station.Storage;
 
 namespace PtlOrchestrator.Station.Presentation;
 
+/// <summary>Avviso da mostrare all'operatore in una finestra. Se <paramref name="ClosesWhenProductIsPlaced"/> si chiude da solo a prodotto posizionato.</summary>
+public sealed record PopupRequest(string Title, string Message, bool ClosesWhenProductIsPlaced);
+
 /// <summary>
 /// Stato mostrato nella finestra principale: operatore in turno, input manuale dei codici,
 /// carrelli attivi, ultima scansione e salute del sistema (PTL, coda verso il server).
@@ -87,8 +90,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _ => 2
     };
 
-    /// <summary>Richiesta di un popup per l'operatore (per ora: limite di carrelli superato).</summary>
-    public event EventHandler<string>? PopupRequested;
+    /// <summary>Richiesta di un popup per l'operatore (limite di carrelli, prodotto ancora da posizionare).</summary>
+    public event EventHandler<PopupRequest>? PopupRequested;
+
+    /// <summary>Il prodotto in corso è stato posizionato: il popup che lo segnalava non serve più.</summary>
+    public event EventHandler? PopupDismissRequested;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLoggedOut))]
@@ -178,8 +184,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void RaisePopupIfNeeded(ScanOutcome outcome)
     {
-        if (outcome.Kind == ScanOutcomeKind.CartLimitReached)
-            PopupRequested?.Invoke(this, outcome.Message ?? "Limite di carrelli raggiunto");
+        switch (outcome.Kind)
+        {
+            case ScanOutcomeKind.CartLimitReached:
+                PopupRequested?.Invoke(this, new PopupRequest("Limite carrelli", outcome.Message ?? "Limite di carrelli raggiunto", false));
+                break;
+
+            case ScanOutcomeKind.ProductInProgress:
+                // un solo avviso alla volta: la finestra ignora le richieste mentre ce n'è già uno aperto
+                PopupRequested?.Invoke(this, new PopupRequest("Prodotto da posizionare", outcome.Message ?? "Posiziona prima il prodotto già scansionato", true));
+                break;
+
+            case ScanOutcomeKind.ProductAccepted:
+            case ScanOutcomeKind.ProductRejected:
+            case ScanOutcomeKind.ProcessingFailed:
+                // l'elaborazione del prodotto è finita: l'avviso "posiziona prima il prodotto" è superato
+                PopupDismissRequested?.Invoke(this, EventArgs.Empty);
+                break;
+        }
     }
 
     private bool CanSubmitCode() => CodeInput.Trim().Length > 0;
@@ -187,16 +209,22 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(IsLoggedIn))]
     private async Task LogoutAsync(CancellationToken cancellationToken)
     {
-        // non si esce con prodotti nei carrelli: il lavoro va chiuso prima (report e azzeramento)
+        // con prodotti nei carrelli si genera prima il report (e si azzera): non si perde il lavoro svolto
         if (_cartManager.HasItems())
         {
-            _dispatcher.Post(() => LastMessage = new(
-                MessageSeverity.Warning,
-                "Ci sono prodotti nei carrelli: premi Reset prima di uscire"));
-            return;
+            try
+            {
+                await Task.Run(() => _cartManager.CloseWorkAsync(cancellationToken), cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Report in uscita non riuscito");
+                _dispatcher.Post(() => LastMessage = new(MessageSeverity.Error, $"Report non riuscito: {ex.Message}"));
+                return;
+            }
         }
 
-        // i carrelli del turno tornano disponibili per le altre postazioni
+        // il logout scollega anche i carrelli, che tornano disponibili alle altre postazioni
         foreach (var cartId in _cartManager.ActiveCartIds())
         {
             var release = await Task.Run(() => _cartManager.ReleaseCartAsync(cartId, cancellationToken), cancellationToken);

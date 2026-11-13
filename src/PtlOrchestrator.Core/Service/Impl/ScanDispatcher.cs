@@ -18,6 +18,10 @@ public sealed class ScanDispatcher(
     private readonly IAppProcessingState _appProcessingState = appProcessingState;
     private readonly ILogger<ScanDispatcher> _logger = logger;
 
+    private volatile string? _productInProgress;
+
+    public string? ProductInProgress => _productInProgress;
+
     public async Task<ScanOutcome> DispatchAsync(string scannedCode, CancellationToken cancellationToken)
     {
         var code = scannedCode.Trim();
@@ -43,13 +47,19 @@ public sealed class ScanDispatcher(
     private async Task<ScanOutcome> ProcessSessionScanAsync(string code, CancellationToken cancellationToken)
     {
         if (!_appProcessingState.TryEnter())
-            return ScanOutcome.SystemBusy();
+        {
+            // un prodotto è già in lavorazione: va posizionato prima di scansionarne un altro
+            return _productInProgress is { } inProgress
+                ? ScanOutcome.ProductInProgress(inProgress)
+                : ScanOutcome.SystemBusy();
+        }
 
         try
         {
             if (_cartManager.IsKnownCart(code))
                 return await ProcessCartCheckInAsync(code, cancellationToken);
 
+            _productInProgress = code;
             var assignment = await _cartManager.ProcessBarcode(code, cancellationToken);
 
             return assignment.Success
@@ -63,6 +73,7 @@ public sealed class ScanDispatcher(
         }
         finally
         {
+            _productInProgress = null;
             _appProcessingState.Exit();
         }
     }

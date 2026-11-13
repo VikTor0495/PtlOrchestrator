@@ -13,7 +13,6 @@ public sealed class SettingsStore(LocalDatabase database)
     /// <summary>Chiavi che la GUI permette di modificare (sezione:chiave, come in configurazione).</summary>
     public static readonly IReadOnlyList<string> EditableKeys =
     [
-        "Station:StationId",
         "Central:BaseUrl",
         "Central:ApiKey",
         "Central:EventSyncIntervalSeconds",

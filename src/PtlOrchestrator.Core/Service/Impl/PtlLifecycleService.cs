@@ -16,6 +16,7 @@ public sealed class PtlLifecycleService(
     IBasketLimitService basketLimitService,
     ICartManager cartManager,
     IAppProcessingState appProcessingState,
+    IShutdownIntent shutdownIntent,
     IOptions<BarcodeLimitOptions> limitOptions,
     TimeProvider timeProvider,
     ILogger<PtlLifecycleService> logger) : BackgroundService
@@ -26,6 +27,7 @@ public sealed class PtlLifecycleService(
     private readonly IBasketLimitService _basketLimitService = basketLimitService;
     private readonly ICartManager _cartManager = cartManager;
     private readonly IAppProcessingState _appProcessingState = appProcessingState;
+    private readonly IShutdownIntent _shutdownIntent = shutdownIntent;
     private readonly BarcodeLimitOptions _limitOptions = limitOptions.Value;
     private readonly TimeProvider _timeProvider = timeProvider;
     private readonly ILogger<PtlLifecycleService> _logger = logger;
@@ -87,6 +89,25 @@ public sealed class PtlLifecycleService(
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Azzeramento dei carrelli allo spegnimento non riuscito");
+            }
+
+            // la chiusura scollega i carrelli (il report è già scritto); l'unica eccezione è il riavvio dalle Impostazioni,
+            // che li tiene collegati: la postazione li riprende da sola alla riapertura
+            if (!_shutdownIntent.KeepCartsAttached)
+            {
+                foreach (var cartId in _cartManager.ActiveCartIds())
+                {
+                    try
+                    {
+                        var outcome = await _cartManager.ReleaseCartAsync(cartId, cancellationToken);
+                        if (!outcome.Success)
+                            _logger.LogWarning("Carrello {CartId} non scollegato alla chiusura: {Message}", cartId, outcome.Message);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Scollegamento del carrello {CartId} alla chiusura non riuscito", cartId);
+                    }
+                }
             }
         }
 

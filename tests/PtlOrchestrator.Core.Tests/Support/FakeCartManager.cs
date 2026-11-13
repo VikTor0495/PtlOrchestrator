@@ -43,7 +43,9 @@ internal sealed class FakeCartManager : ICartManager
     public Task<CartReleaseOutcome> ReleaseCartAsync(string cartId, CancellationToken cancellationToken)
         => Task.FromResult(new CartReleaseOutcome(true, $"Carrello {cartId} rimosso"));
 
-    public IReadOnlyList<string> ActiveCartIds() => [];
+    public List<string> ActiveCarts { get; } = [];
+
+    public IReadOnlyList<string> ActiveCartIds() => [.. ActiveCarts];
 
     public bool HasItems() => false;
 

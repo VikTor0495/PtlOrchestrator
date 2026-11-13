@@ -5,8 +5,14 @@
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
     <StackPanel Margin="16">
         <TextBlock FontSize="18" FontWeight="SemiBold" Text="Impostazioni postazione" />
-        <TextBlock Margin="0,4,0,12" Foreground="#6B7280" TextWrapping="Wrap"
-                   Text="Le modifiche vengono salvate con lo storico e valgono dopo il riavvio della postazione. Lasciare vuoto l'identificativo per usare quello automatico della macchina." />
+        <TextBlock Margin="0,4,0,8" Foreground="#6B7280" TextWrapping="Wrap"
+                   Text="Le modifiche valgono dopo il riavvio. «Salva e riavvia» chiude e riapre il programma: i carrelli restano collegati." />
+
+        <!-- compare solo se nei carrelli ci sono prodotti -->
+        <Border x:Name="LockedNotice" Visibility="Collapsed" Margin="0,0,0,12" Padding="12" CornerRadius="6" Background="#FEF3C7">
+            <TextBlock TextWrapping="Wrap" FontSize="14"
+                       Text="Le impostazioni si possono modificare solo quando i carrelli sono vuoti. Premi Reset e poi riapri questa finestra." />
+        </Border>
 
         <Grid x:Name="FieldsGrid">
             <Grid.ColumnDefinitions>
@@ -19,8 +25,8 @@
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Padding="16,6" Margin="0,0,8,0" Content="Chiudi" Click="Close_Click" />
-            <Button Padding="16,6" Margin="0,0,8,0" Content="Salva" Click="Save_Click" />
-            <Button Padding="16,6" Content="Salva e riavvia" Click="SaveAndRestart_Click" />
+            <Button x:Name="SaveButton" Padding="16,6" Margin="0,0,8,0" Content="Salva" Click="Save_Click" />
+            <Button x:Name="SaveRestartButton" Padding="16,6" Content="Salva e riavvia" Click="SaveAndRestart_Click" />
         </StackPanel>
     </StackPanel>
 </Window>

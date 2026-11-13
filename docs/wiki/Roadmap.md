@@ -46,13 +46,14 @@ Un passo = un commit + push. Spuntare qui il passo nello stesso commit.
 - [x] 5.12 Simulatore PTL (`tools/ptl-simulator`): modalità `--headless`, operazioni `state` e `press` sulla porta di controllo, risposta in frame (la DLL la richiede), dialetto Station tollerante (`--strict` per rifiutarlo)
 
 ### Da fare alla prossima sessione
-- [ ] **Commit e push** del lavoro non ancora committato (Console rimossa, GUI login-first, `UseWindowsForms` nella Station, simulatore). Prima `dotnet test PtlOrchestrator.sln`: chiudere Api, Station e simulatore, che bloccano i DLL
+- [x] Commit e push del lavoro (fatto)
 - [ ] **Test manuale** (non ancora fatto): Api + simulatore + Station; login `OP001`, check-in carrello `10` (127.0.0.1:15003), scansione prodotto, lampada nel simulatore, click per CONFIRM, rimozione carrello, chiusura sventagliamento, logout
 - [ ] **Test d'integrazione DLL ↔ simulatore** (`PtlSimulatorIntegrationTests`, oggi in Skip): la DLL Lightstep carica `System.Windows.Forms` dentro `Connect`, quindi vanno spostati in `Station.Tests` (net10.0-windows) e va capito perché `SendCommand` si blocca nel test host (da console funziona dopo la risposta in frame)
 - [ ] **Formato dei comandi**: `Pp505Builder` scrive i blocchi `m1/m2/m3` in forma abbreviata, diversa dai 3 byte dei manuali. Il simulatore li accetta come "dialetto Station" ma il controller reale potrebbe rifiutarli. Verificare con Reflexer/controller. Verificare anche il formato dell'evento `t` (pulsante)
 - [ ] **Licenza Lightstep**: `Lightstep:LicenzeKey` va inserita nelle impostazioni della Station (non è nel repo); il simulatore accetta anche la chiave vuota
 - [ ] **Pulizia `ptl_test`**: carrelli di prova 1, 2, 3, 10 e relative assegnazioni; **cambiare la password** del ruolo `ptl_test` (è su GitHub in `docs/wiki/Setup-e-Build.md`) e togliere la riga dalla wiki
 - [x] 5.8 Icona dell'eseguibile Station (`assets/PTL-Orchestrator.ico`, in `ApplicationIcon` e nella finestra)
+- [x] 5.9 Regole carrelli: **Reset** genera il report e azzera i prodotti senza scollegare i carrelli; **logout** e **chiusura programma** generano il report (se ci sono prodotti) e scollegano i carrelli; **Salva e riavvia** (Impostazioni, abilitato solo a carrelli vuoti) li mantiene e vengono ripristinati al riavvio (`active_carts` in SQLite). Un solo prodotto alla volta: finché non è posizionato, nuove scansioni mostrano un unico popup. Diagnostica: pulsante "Scollega" per i carrelli. Postazione mostrata in basso a sinistra
 
 ## Fase 4 — Chiusura
 - [x] 4.1 Console dismessa (decisione dell'utente): progetto rimosso dalla soluzione e dal repo; resta nella storia git. Il docker compose contiene solo PostgreSQL e Api

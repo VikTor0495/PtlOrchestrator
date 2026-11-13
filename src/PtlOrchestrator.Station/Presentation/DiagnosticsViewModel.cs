@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using PtlOrchestrator.Domain;
+using PtlOrchestrator.Manager;
 using PtlOrchestrator.Service;
 
 namespace PtlOrchestrator.Station.Presentation;
@@ -10,12 +11,14 @@ namespace PtlOrchestrator.Station.Presentation;
 /// <summary>Un componente collegato alla postazione (server centrale o carrello) con il suo stato.</summary>
 public sealed class LinkStatus
 {
-    public LinkStatus(string name, string detail, bool isConnected, Func<Task> reconnect)
+    public LinkStatus(string name, string detail, bool isConnected, Func<Task> reconnect, Func<Task>? remove = null)
     {
         Name = name;
         Detail = detail;
         IsConnected = isConnected;
         ReconnectCommand = new AsyncRelayCommand(reconnect);
+        RemoveCommand = new AsyncRelayCommand(remove ?? (() => Task.CompletedTask));
+        CanRemove = remove is not null;
     }
 
     public string Name { get; }
@@ -28,6 +31,11 @@ public sealed class LinkStatus
 
     /// <summary>Riprova il collegamento: la GUI lo mostra solo quando il componente non è connesso.</summary>
     public IAsyncRelayCommand ReconnectCommand { get; }
+
+    /// <summary>Solo per i carrelli: lo toglie dal turno e lo libera sul server (possibile se è vuoto).</summary>
+    public IAsyncRelayCommand RemoveCommand { get; }
+
+    public bool CanRemove { get; }
 }
 
 /// <summary>
@@ -36,6 +44,7 @@ public sealed class LinkStatus
 /// </summary>
 public sealed partial class DiagnosticsViewModel(
     ICartAssignmentClient serverClient,
+    ICartManager cartManager,
     ILightstepConnectionService lightstep,
     CartContainer cartContainer,
     IUiDispatcher dispatcher,
@@ -44,6 +53,7 @@ public sealed partial class DiagnosticsViewModel(
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ICartAssignmentClient _serverClient = serverClient;
+    private readonly ICartManager _cartManager = cartManager;
     private readonly ILightstepConnectionService _lightstep = lightstep;
     private readonly CartContainer _cartContainer = cartContainer;
     private readonly IUiDispatcher _dispatcher = dispatcher;
@@ -91,7 +101,8 @@ public sealed partial class DiagnosticsViewModel(
                 $"Carrello {cartId}",
                 endpoint?.ToString() ?? "controller predefinito",
                 connected,
-                () => ReconnectCartAsync(cartId, endpoint)));
+                () => ReconnectCartAsync(cartId, endpoint),
+                () => RemoveCartAsync(cartId)));
         }
 
         _dispatcher.Post(() =>
@@ -157,6 +168,16 @@ public sealed partial class DiagnosticsViewModel(
             SetMessage($"Riconnessione del carrello {cartId} non riuscita: {ex.Message}");
         }
 
+        await RefreshAsync(CancellationToken.None);
+    }
+
+    /// <summary>Scollega il carrello dal turno (come la ✕ nella schermata di lavoro): possibile solo se è vuoto.</summary>
+    private async Task RemoveCartAsync(string cartId)
+    {
+        // la DLL del PTL blocca il thread che la chiama: si lavora fuori dal thread della finestra
+        var outcome = await Task.Run(() => _cartManager.ReleaseCartAsync(cartId, CancellationToken.None));
+
+        SetMessage(outcome.Message);
         await RefreshAsync(CancellationToken.None);
     }
 

@@ -29,11 +29,38 @@ public sealed class DiagnosticsViewModelTests
             => throw new NotSupportedException();
     }
 
+    private sealed class FakeCarts : PtlOrchestrator.Manager.ICartManager
+    {
+        public List<string> Released { get; } = [];
+        public bool Refuse { get; set; }
+
+        public Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public bool IsKnownCart(string code) => false;
+        public Task<CartCheckInOutcome> CheckInAsync(string cartCode, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<CartReleaseOutcome> ReleaseCartAsync(string cartCode, CancellationToken cancellationToken)
+        {
+            if (Refuse)
+                return Task.FromResult(new CartReleaseOutcome(false, $"Il carrello {cartCode} contiene prodotti"));
+
+            Released.Add(cartCode);
+            return Task.FromResult(new CartReleaseOutcome(true, $"Carrello {cartCode} rimosso dal turno"));
+        }
+
+        public IReadOnlyList<string> ActiveCartIds() => [];
+        public bool HasItems() => false;
+        public Task CloseWorkAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ResetAll(CancellationToken cancellationToken) => Task.CompletedTask;
+        public void ShowStatus() { }
+        public void WriteCsvReport() { }
+    }
+
     private static readonly PtlEndpoint FirstController = new("10.0.0.1", 15010);
     private static readonly PtlEndpoint SecondController = new("10.0.0.2", 15011);
 
     private readonly FakeServerClient _server = new();
     private readonly FakeLightstep _lightstep = new();
+    private readonly FakeCarts _carts = new();
 
     private DiagnosticsViewModel CreateViewModel(params (string Id, PtlEndpoint Endpoint)[] carts)
     {
@@ -41,7 +68,7 @@ public sealed class DiagnosticsViewModelTests
         foreach (var (id, endpoint) in carts)
             container.Activate(new Cart(id, [new Basket($"{id}01", 0)], endpoint));
 
-        return new DiagnosticsViewModel(_server, _lightstep, container, new ImmediateDispatcher(), NullLogger<DiagnosticsViewModel>.Instance);
+        return new DiagnosticsViewModel(_server, _carts, _lightstep, container, new ImmediateDispatcher(), NullLogger<DiagnosticsViewModel>.Instance);
     }
 
     [Fact]
@@ -104,6 +131,45 @@ public sealed class DiagnosticsViewModelTests
         Assert.Equal(["disconnect", "try-connect 10.0.0.1:15010"], _lightstep.Calls);
         Assert.True(viewModel.Links[1].IsConnected);
         Assert.Contains("riconnesso", viewModel.Message);
+    }
+
+    [Fact]
+    public async Task OnlyCartsCanBeDetached_NotTheServer()
+    {
+        _lightstep.IsConnected = true;
+        var viewModel = CreateViewModel(("1", FirstController));
+
+        await viewModel.RefreshAsync(CancellationToken.None);
+
+        Assert.False(viewModel.Links[0].CanRemove);
+        Assert.True(viewModel.Links[1].CanRemove);
+    }
+
+    [Fact]
+    public async Task DetachingACart_ReleasesItAndShowsTheOutcome()
+    {
+        _lightstep.IsConnected = true;
+        var viewModel = CreateViewModel(("1", FirstController));
+        await viewModel.RefreshAsync(CancellationToken.None);
+
+        await viewModel.Links[1].RemoveCommand.ExecuteAsync(null);
+
+        Assert.Equal(["1"], _carts.Released);
+        Assert.Contains("rimosso", viewModel.Message);
+    }
+
+    [Fact]
+    public async Task DetachingACartWithProducts_ShowsWhyItIsRefused()
+    {
+        _lightstep.IsConnected = true;
+        _carts.Refuse = true;
+        var viewModel = CreateViewModel(("1", FirstController));
+        await viewModel.RefreshAsync(CancellationToken.None);
+
+        await viewModel.Links[1].RemoveCommand.ExecuteAsync(null);
+
+        Assert.Empty(_carts.Released);
+        Assert.Contains("contiene prodotti", viewModel.Message);
     }
 
     [Fact]

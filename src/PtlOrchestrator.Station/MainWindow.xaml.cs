@@ -7,6 +7,8 @@ namespace PtlOrchestrator.Station;
 public partial class MainWindow : Window
 {
     private readonly IServiceProvider _services;
+    private Views.NoticeWindow? _notice;
+    private bool _noticeClosesWhenProductIsPlaced;
 
     public MainWindow(MainViewModel viewModel, IServiceProvider services)
     {
@@ -29,8 +31,24 @@ public partial class MainWindow : Window
         };
 
         // popup per l'operatore, ad esempio quando si supera il numero massimo di carrelli
-        viewModel.PopupRequested += (_, message) =>
-            MessageBox.Show(this, message, "Limite carrelli", MessageBoxButton.OK, MessageBoxImage.Warning);
+        viewModel.PopupRequested += (_, popup) =>
+        {
+            // un solo avviso alla volta: se l'operatore scansiona ancora, quello aperto resta e non si duplica
+            if (_notice is not null)
+                return;
+
+            _noticeClosesWhenProductIsPlaced = popup.ClosesWhenProductIsPlaced;
+            _notice = new Views.NoticeWindow(popup.Title, popup.Message) { Owner = this };
+            _notice.Closed += (_, _) => _notice = null;
+            _notice.Show();
+        };
+
+        // a prodotto posizionato l'avviso "posiziona prima il prodotto" non serve più
+        viewModel.PopupDismissRequested += (_, _) =>
+        {
+            if (_notice is not null && _noticeClosesWhenProductIsPlaced)
+                _notice.Close();
+        };
     }
 
     public void OpenSettings()

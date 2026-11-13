@@ -20,6 +20,7 @@ public sealed class CartManager(
     ILightstepConnectionService connectionService,
     IOperatorSessionContext sessionContext,
     IOptions<StationOptions> stationOptions,
+    IActiveCartStore activeCartStore,
     ILogger<CartManager> logger) : ICartManager
 {
     private static readonly TimeSpan GreenToResetDelay = TimeSpan.FromSeconds(1);
@@ -34,6 +35,7 @@ public sealed class CartManager(
     private readonly ILightstepConnectionService _connectionService = connectionService;
     private readonly IOperatorSessionContext _sessionContext = sessionContext;
     private readonly string _stationId = stationOptions.Value.StationId;
+    private readonly IActiveCartStore _activeCartStore = activeCartStore;
     private readonly ILogger<CartManager> _logger = logger;
 
     public async Task<CartAssignmentResult> ProcessBarcode(string barcode, CancellationToken cancellationToken)
@@ -171,6 +173,7 @@ public sealed class CartManager(
 
         _logger.LogInformation("Check-in del carrello {CartCode} sul controller {Endpoint}", cartCode, endpoint);
         await _operationRecorder.RecordAsync(OperationEventType.CartCheckedIn, cartId: cartCode, details: endpoint.ToString());
+        await PersistActiveCartsAsync();
 
         return new(CartCheckInResult.Done, $"Carrello {cartCode} attivato: puoi scansionare i prodotti");
     }
@@ -198,6 +201,7 @@ public sealed class CartManager(
 
         _logger.LogInformation("Carrello {CartCode} rilasciato", cartCode);
         await _operationRecorder.RecordAsync(OperationEventType.CartReleased, cartId: cartCode);
+        await PersistActiveCartsAsync();
 
         return new(true, $"Carrello {cartCode} rimosso dal turno");
     }
@@ -409,6 +413,19 @@ public sealed class CartManager(
         {
             // il carrello è già stato rilasciato sul server: un controller spento non blocca la rimozione
             _logger.LogWarning(ex, "Spegnimento delle lampade del carrello {CartId} non riuscito", cart.CartId);
+        }
+    }
+
+    /// <summary>Ricorda i carrelli attivi: dopo una chiusura o un riavvio la postazione li riprende da sola.</summary>
+    private async Task PersistActiveCartsAsync()
+    {
+        try
+        {
+            await _activeCartStore.SaveAsync(ActiveCartIds(), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Salvataggio dei carrelli attivi non riuscito");
         }
     }
 

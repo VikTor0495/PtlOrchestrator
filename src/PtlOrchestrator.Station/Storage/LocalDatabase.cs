@@ -32,6 +32,11 @@ public sealed class LocalDatabase
         );
         CREATE INDEX IF NOT EXISTS ix_cached_operators_badge ON cached_operators (badge_code);
 
+        -- carrelli attivi della postazione: sopravvivono a chiusure e riavvii finché l'operatore non li scollega
+        CREATE TABLE IF NOT EXISTS active_carts (
+            cart_code TEXT PRIMARY KEY
+        );
+
         -- impostazioni modificate dalla GUI: sovrascrivono appsettings.json all'avvio
         CREATE TABLE IF NOT EXISTS app_settings (
             key        TEXT PRIMARY KEY,

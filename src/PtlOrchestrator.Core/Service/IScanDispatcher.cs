@@ -9,4 +9,7 @@ public interface IScanDispatcher
     /// con sessione attiva è un prodotto da assegnare a una cesta.
     /// </summary>
     Task<ScanOutcome> DispatchAsync(string scannedCode, CancellationToken cancellationToken);
+
+    /// <summary>Codice del prodotto scansionato e non ancora posizionato nella cesta, o null se nessuno è in corso.</summary>
+    string? ProductInProgress => null;
 }

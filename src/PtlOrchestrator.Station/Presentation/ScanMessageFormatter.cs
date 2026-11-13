@@ -30,6 +30,7 @@ public static class ScanMessageFormatter
             ScanOutcomeKind.CartCheckedIn => new(MessageSeverity.Success, outcome.Message!),
             ScanOutcomeKind.CartCheckInRejected => new(MessageSeverity.Warning, outcome.Message!),
             ScanOutcomeKind.CartLimitReached => new(MessageSeverity.Warning, outcome.Message!),
+            ScanOutcomeKind.ProductInProgress => new(MessageSeverity.Warning, outcome.Message!),
             _ => null
         };
 

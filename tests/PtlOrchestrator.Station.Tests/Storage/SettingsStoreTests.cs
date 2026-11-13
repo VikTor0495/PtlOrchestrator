@@ -69,12 +69,12 @@ public sealed class SettingsStoreTests : IDisposable
     public async Task ReadAll_ReturnsTheSavedValuesForTheStartupConfiguration()
     {
         var store = new SettingsStore(_database.Database);
-        await store.SaveAsync(new Dictionary<string, string> { ["Station:StationId"] = "ST-CASSA" }, _at, CancellationToken.None);
+        await store.SaveAsync(new Dictionary<string, string> { ["Central:BaseUrl"] = "http://server-cassa:5000" }, _at, CancellationToken.None);
         SqliteConnection.ClearAllPools();
 
         var values = SettingsStore.ReadAll(_database.DatabasePath);
 
-        Assert.Equal("ST-CASSA", values["Station:StationId"]);
+        Assert.Equal("http://server-cassa:5000", values["Central:BaseUrl"]);
     }
 
     private string _databaseFile() => _database.DatabasePath;

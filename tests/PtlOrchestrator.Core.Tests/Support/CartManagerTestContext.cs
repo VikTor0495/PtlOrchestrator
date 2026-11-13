@@ -46,6 +46,7 @@ internal sealed class CartManagerTestContext
                 Options.Create(new LightstepOptions()), NullLogger<LightstepConnectionService>.Instance),
             Session,
             Options.Create(new StationOptions { StationId = "ST-TEST" }),
+            new NullActiveCartStore(),
             NullLogger<CartManager>.Instance);
     }
 

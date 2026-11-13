@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Configuration;
+using PtlOrchestrator.Manager;
+using PtlOrchestrator.Service;
 using PtlOrchestrator.Station.Storage;
 
 namespace PtlOrchestrator.Station;
@@ -21,7 +23,6 @@ public partial class SettingsWindow : Window
     // nomi per i magazzinieri: cosa è, in parole semplici
     private static readonly Dictionary<string, (string Title, string Hint)> Descriptions = new()
     {
-        ["Station:StationId"] = ("Nome della postazione", "Lascia vuoto: il nome viene scelto in automatico per questo computer"),
         ["Central:BaseUrl"] = ("Indirizzo del server", "Esempio: http://192.168.1.50:5000"),
         ["Central:ApiKey"] = ("Chiave di accesso al server", "Te la fornisce chi gestisce il server"),
         ["Central:EventSyncIntervalSeconds"] = ("Invio dei dati al server ogni (secondi)", "Ogni quanto la postazione manda al server il lavoro svolto"),
@@ -30,20 +31,24 @@ public partial class SettingsWindow : Window
         ["LimitBarcode:FileName"] = ("File dei prodotti", "Nome del file (messo accanto al programma) o percorso completo, con i prodotti e le quantità massime per cesta"),
         ["ProcessTimeout:Minutes"] = ("Tempo massimo per confermare (minuti)", "Dopo questo tempo senza conferma, l'inserimento viene annullato"),
         ["SerialScanner:PortName"] = ("Porta della pistola barcode", "Esempio: COM3"),
-        ["SerialScanner:BaudRate"] = ("Velocità della pistola", "Di solito 9600: cambiala solo se te lo dice l'assistenza"),
-        ["Lightstep:LicenzeKey"] = ("Codice di licenza delle luci", "Codice del controller delle luci, fornito dal produttore")
+        ["SerialScanner:BaudRate"] = ("Velocità della pistola", "Di solito 9600: cambiare solo su indicazione dell'assistenza"),
+        ["Lightstep:LicenzeKey"] = ("Licenza Lightstep", "Codice di licenza della libreria di comando luci. Fornito dal produttore")
     };
 
     private readonly IConfiguration _configuration;
     private readonly SettingsStore _store;
+    private readonly ICartManager _cartManager;
+    private readonly IShutdownIntent _shutdownIntent;
     private readonly Dictionary<string, TextBox> _fields = [];
 
-    public SettingsWindow(IConfiguration configuration, SettingsStore store)
+    public SettingsWindow(IConfiguration configuration, SettingsStore store, ICartManager cartManager, IShutdownIntent shutdownIntent)
     {
         InitializeComponent();
 
         _configuration = configuration;
         _store = store;
+        _cartManager = cartManager;
+        _shutdownIntent = shutdownIntent;
 
         var row = 0;
         foreach (var key in SettingsStore.EditableKeys)
@@ -75,6 +80,17 @@ public partial class SettingsWindow : Window
 
             _fields[key] = field;
             row++;
+        }
+
+        // con prodotti nei carrelli le impostazioni non si toccano: prima Reset, poi si modificano
+        if (_cartManager.HasItems())
+        {
+            LockedNotice.Visibility = Visibility.Visible;
+            SaveButton.IsEnabled = false;
+            SaveRestartButton.IsEnabled = false;
+
+            foreach (var field in _fields.Values)
+                field.IsReadOnly = true;
         }
     }
 
@@ -126,11 +142,14 @@ public partial class SettingsWindow : Window
     }
 
     // riapre la postazione con le impostazioni appena salvate (le variabili d'ambiente passano al nuovo processo)
-    private static void Restart()
+    private void Restart()
     {
         var executable = Environment.ProcessPath;
         if (executable is null)
             return;
+
+        // il riavvio per applicare le impostazioni non scollega i carrelli: la postazione li riprende alla riapertura
+        _shutdownIntent.KeepCartsAttached = true;
 
         Process.Start(new ProcessStartInfo(executable) { UseShellExecute = false });
         Application.Current.Shutdown();
